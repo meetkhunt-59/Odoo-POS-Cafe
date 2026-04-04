@@ -201,6 +201,7 @@ class OrderItemInput(BaseModel):
 class OrderCreateRequest(BaseModel):
     session_id: UUID
     table_id: UUID | None = None
+    customer_id: UUID | None = None
     items: list[OrderItemInput]
 
 
@@ -276,6 +277,19 @@ class PaymentSummary(BaseModel):
     date: str
     payment_method: str
     total_amount: Decimal
+
+class CustomerCreate(BaseModel):
+    name: str
+    phone: str | None = None
+    email: str | None = None
+
+class CustomerResponse(BaseModel):
+    id: UUID
+    name: str
+    phone: str | None = None
+    email: str | None = None
+    total_sales: Decimal
+    created_at: datetime
 
 FloorRequest.model_rebuild()
 FloorResponse.model_rebuild()

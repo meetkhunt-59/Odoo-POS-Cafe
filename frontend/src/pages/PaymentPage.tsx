@@ -9,7 +9,7 @@ import { useState } from 'react';
 export default function PaymentPage() {
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
-  const { cart, session, selectedTableId, clearCart, resetForNewCustomer, activeOrder, setPaymentSuccess } = usePosStore();
+  const { cart, session, selectedTableId, selectedCustomer, clearCart, resetForNewCustomer, activeOrder, setPaymentSuccess } = usePosStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
 
@@ -28,6 +28,7 @@ export default function PaymentPage() {
         const order = await api.createOrder(token, {
           session_id: session.id,
           table_id: selectedTableId,
+          customer_id: selectedCustomer?.id || null,
           items: cart.map(item => ({
             product_id: item.product.id,
             variant_id: item.variant?.id,

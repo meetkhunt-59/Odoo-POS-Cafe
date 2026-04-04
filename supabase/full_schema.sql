@@ -106,12 +106,22 @@ CREATE TABLE IF NOT EXISTS public.pos_sessions (
   )
 );
 
+-- Customers
+CREATE TABLE IF NOT EXISTS public.customers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Orders
 CREATE TABLE IF NOT EXISTS public.orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_number SERIAL UNIQUE NOT NULL,
   session_id UUID NOT NULL REFERENCES public.pos_sessions(id) ON DELETE RESTRICT,
   table_id UUID REFERENCES public.tables(id) ON DELETE SET NULL,
+  customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
   kitchen_status TEXT NOT NULL DEFAULT 'to_cook'
     CHECK (kitchen_status IN ('to_cook', 'preparing', 'completed', 'cancelled')),
   payment_status TEXT NOT NULL DEFAULT 'unpaid'
@@ -183,6 +193,7 @@ ALTER TABLE public.pos_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.self_order_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 
 -- Cleanup existing policies to avoid conflicts
 DO $$
@@ -226,6 +237,11 @@ CREATE POLICY orders_select_auth ON public.orders FOR SELECT USING (auth.role() 
 CREATE POLICY orders_insert_auth ON public.orders FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY orders_update_auth ON public.orders FOR UPDATE USING (auth.role() = 'authenticated');
 
+-- CUSTOMERS
+CREATE POLICY customers_select_auth ON public.customers FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY customers_insert_auth ON public.customers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY customers_update_auth ON public.customers FOR UPDATE USING (auth.role() = 'authenticated');
+
 -- ORDER ITEMS
 CREATE POLICY order_items_select_auth ON public.order_items FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY order_items_insert_auth ON public.order_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
@@ -248,3 +264,4 @@ CREATE POLICY everything_service_role_session ON public.pos_sessions FOR ALL TO 
 CREATE POLICY everything_service_role_order ON public.orders FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY everything_service_role_item ON public.order_items FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY everything_service_role_token ON public.self_order_tokens FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY everything_service_role_customer ON public.customers FOR ALL TO service_role USING (true) WITH CHECK (true);

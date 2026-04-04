@@ -46,6 +46,7 @@ export default function DashboardNavbar() {
             <div className="dashboard-dropdown-menu">
               <button onClick={() => handleNavigate('/transactions')}>Orders</button>
               <button onClick={() => handleNavigate('/payments-history')}>Payment</button>
+              <button onClick={() => handleNavigate('/customers')}>Customers</button>
               <button onClick={() => {
                 setActiveDropdown(null);
                 window.open('/pos/customer-display', 'CustomerDisplay', 'width=1024,height=768');

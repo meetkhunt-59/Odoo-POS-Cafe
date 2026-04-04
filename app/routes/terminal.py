@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import Client, get_db
 from app.deps import get_current_user
 from app.schemas import (
+    SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, 
     OrderPayRequest, OrderItemResponse, KitchenActionRequest,
-    TransactionSummary, PaymentSummary
+    TransactionSummary, PaymentSummary, CustomerCreate, CustomerResponse
 )
 from decimal import Decimal
 from collections import defaultdict
@@ -30,6 +31,7 @@ def create_order(
     order_data = {
         "session_id": str(payload.session_id),
         "table_id": str(payload.table_id) if payload.table_id else None,
+        "customer_id": str(payload.customer_id) if payload.customer_id else None,
     }
     order_res = db.table("orders").insert(order_data).execute()
     if not order_res.data:
@@ -38,23 +40,32 @@ def create_order(
     
     total = Decimal("0")
     order_items = []
+    
+    # Fast Bulk Product Lookup (O(1) instead of O(N))
+    product_ids = [str(i.product_id) for i in payload.items]
+    prod_res = db.table("products").select("id, price").in_("id", product_ids).execute()
+    prod_map = {p["id"]: p for p in prod_res.data}
+    
+    insert_data_list = []
     for item_data in payload.items:
-        prod_res = db.table("products").select("*").eq("id", str(item_data.product_id)).execute()
-        if not prod_res.data:
+        prod = prod_map.get(str(item_data.product_id))
+        if not prod:
             raise HTTPException(404, f"Product {item_data.product_id} not found in catalog.")
-        prod = prod_res.data[0]
-        
-        insert_data = {
+            
+        insert_data_list.append({
             "order_id": order["id"],
             "product_id": prod["id"],
             "quantity": item_data.quantity,
             "price_at_checkout": prod["price"],
-        }
-        item_res = db.table("order_items").insert(insert_data).execute()
-        if not item_res.data:
-             raise HTTPException(500, "Failed to insert order item representation.")
-        order_items.append(item_res.data[0])
+        })
         total += Decimal(str(prod["price"])) * Decimal(str(item_data.quantity))
+    
+    # Fast Bulk Insert (O(1) instead of O(N))
+    if insert_data_list:
+        items_res = db.table("order_items").insert(insert_data_list).execute()
+        if not items_res.data:
+             raise HTTPException(500, "Failed to bulk insert order items.")
+        order_items = items_res.data
     
     upd = db.table("orders").update({"total_amount": float(total)}).eq("id", order["id"]).execute()
     if not upd.data:
@@ -138,6 +149,56 @@ def get_payment_summary(
     # Sort newest first
     summaries.sort(key=lambda x: x.date, reverse=True)
     return summaries
+
+@router.get("/customers", response_model=list[CustomerResponse])
+def get_customers(
+    search: str = "",
+    limit: int = 50,
+    offset: int = 0,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    query = db.table("customers").select("*, orders(total_amount)")
+    if search:
+        query = query.or_(f"name.ilike.%{search}%,phone.ilike.%{search}%")
+        
+    res = query.order("created_at", desc=True).range(offset, offset + limit - 1).execute()
+    
+    customers = []
+    for c in res.data:
+        # Sum total_sales from related orders
+        orders = c.get("orders") or []
+        total_sales = sum(Decimal(str(o["total_amount"])) for o in orders)
+        customers.append(CustomerResponse(
+            id=c["id"],
+            name=c["name"],
+            phone=c.get("phone"),
+            email=c.get("email"),
+            total_sales=total_sales,
+            created_at=c["created_at"]
+        ))
+    return customers
+
+@router.post("/customers", response_model=CustomerResponse)
+def create_customer(
+    payload: CustomerCreate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    data = {"name": payload.name, "phone": payload.phone, "email": payload.email}
+    res = db.table("customers").insert(data).execute()
+    if not res.data:
+        raise HTTPException(500, "Failed to create customer")
+    
+    c = res.data[0]
+    return CustomerResponse(
+        id=c["id"],
+        name=c["name"],
+        phone=c.get("phone"),
+        email=c.get("email"),
+        total_sales=Decimal("0.0"),
+        created_at=c["created_at"]
+    )
 
 @router.get("/display/kitchen")
 def get_kitchen_display(

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, ProductCategory, Floor, Table, PaymentMethod, SessionSummary, CartItem } from '../api/types';
+import type { Product, ProductCategory, Floor, Table, PaymentMethod, SessionSummary, CartItem, Customer } from '../api/types';
 import * as api from '../api/client';
 
 interface PosState {
@@ -15,6 +15,7 @@ interface PosState {
   // Cart
   cart: CartItem[];
   selectedTableId: string | null;
+  selectedCustomer: Customer | null;
   selectedPaymentMethodId: string | null;
 
   // Loading
@@ -43,6 +44,7 @@ interface PosState {
 
   // Actions — selection
   selectTable: (tableId: string | null) => void;
+  setSelectedCustomer: (customer: Customer | null) => void;
   selectPaymentMethod: (pmId: string | null) => void;
   resetForNewCustomer: () => void;
   clearCartOnly: () => void;
@@ -61,6 +63,7 @@ export const usePosStore = create<PosState>()(
       session: null,
       cart: [],
       selectedTableId: null,
+      selectedCustomer: null,
       selectedPaymentMethodId: null,
       loading: false,
       activeOrder: null,
@@ -147,11 +150,12 @@ export const usePosStore = create<PosState>()(
         });
       },
 
-      clearCart: () => set({ cart: [], selectedTableId: null, selectedPaymentMethodId: null }),
+      clearCart: () => set({ cart: [], selectedTableId: null, selectedCustomer: null, selectedPaymentMethodId: null }),
 
       selectTable: (tableId) => set({ selectedTableId: tableId }),
+      setSelectedCustomer: (customer) => set({ selectedCustomer: customer }),
       selectPaymentMethod: (pmId) => set({ selectedPaymentMethodId: pmId }),
-      resetForNewCustomer: () => set({ cart: [], selectedTableId: null, selectedPaymentMethodId: null, activeOrder: null, paymentSuccessOrderNumber: null }),
+      resetForNewCustomer: () => set({ cart: [], selectedTableId: null, selectedCustomer: null, selectedPaymentMethodId: null, activeOrder: null, paymentSuccessOrderNumber: null }),
       clearCartOnly: () => set({ cart: [] }),
       setActiveOrder: (order) => set({ activeOrder: order }),
       setPaymentSuccess: (num) => set({ paymentSuccessOrderNumber: num }),

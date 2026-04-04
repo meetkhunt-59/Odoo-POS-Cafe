@@ -5,6 +5,7 @@ import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
 import PaymentSuccessOverlay from './PaymentSuccessOverlay';
+import CustomerSelectionModal from './CustomerSelectionModal';
 import './OrderPanel.css';
 
 export default function OrderPanel() {
@@ -17,10 +18,13 @@ export default function OrderPanel() {
     selectedTableId,
     session,
     tables,
+    selectedCustomer,
+    setSelectedCustomer
   } = usePosStore();
 
   const [orderType, setOrderType] = useState<'Dine In' | 'Take Away'>('Dine In');
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
 
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
   const taxRate = cart.length > 0
@@ -54,6 +58,7 @@ export default function OrderPanel() {
       const order = await api.createOrder(token, {
         session_id: currentSession.id,
         table_id: orderType === 'Take Away' ? null : selectedTableId,
+        customer_id: selectedCustomer?.id || null,
         items: cart.map((item) => ({
           product_id: item.product.id,
           variant_id: item.variant?.id, // Support variants
@@ -95,6 +100,28 @@ export default function OrderPanel() {
             {type}
           </button>
         ))}
+      </div>
+
+      {/* Selected Customer Inline UI */}
+      <div className="customer-selection-area" style={{ padding: '0 16px', marginBottom: '8px' }}>
+        {selectedCustomer ? (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F3F4F6', padding: '8px 12px', borderRadius: '8px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: '#111827' }}>👤 {selectedCustomer.name}</div>
+            <button 
+              onClick={() => setSelectedCustomer(null)} 
+              style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setShowCustomerModal(true)}
+            style={{ width: '100%', padding: '10px', background: '#eef2ff', color: 'var(--primary)', border: '1px dashed var(--primary)', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
+          >
+            + Add Customer (Optional)
+          </button>
+        )}
       </div>
 
       {/* Scrollable Order Items */}
@@ -177,6 +204,10 @@ export default function OrderPanel() {
             navigate('/pos/tables'); // Auto-return to Floor mapping
           }}
         />
+      )}
+
+      {showCustomerModal && (
+        <CustomerSelectionModal onClose={() => setShowCustomerModal(false)} />
       )}
     </aside>
   );

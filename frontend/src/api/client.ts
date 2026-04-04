@@ -12,6 +12,7 @@ import type {
   PointOfSale,
   TransactionSummary,
   PaymentSummary,
+  Customer,
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -267,7 +268,7 @@ export async function openSession(token: string): Promise<SessionSummary> {
 
 export async function createOrder(
   token: string,
-  payload: { session_id: string; table_id?: string | null; items: OrderItemInput[] }
+  payload: { session_id: string; table_id?: string | null; customer_id?: string | null; items: OrderItemInput[] }
 ): Promise<Order> {
   const res = await fetch(`${API_BASE}/terminal/orders`, {
     method: 'POST',
@@ -296,6 +297,23 @@ export async function getTransactions(token: string, limit: number = 50, offset:
 export async function getPaymentSummary(token: string): Promise<PaymentSummary[]> {
   const res = await fetch(`${API_BASE}/terminal/payments/summary`, { headers: authHeaders(token) });
   return handleResponse<PaymentSummary[]>(res);
+}
+
+// ── Customers ────────────────────────────────────────────────
+
+export async function getCustomers(token: string, search: string = '', limit: number = 50, offset: number = 0): Promise<Customer[]> {
+  const params = new URLSearchParams({ search, limit: limit.toString(), offset: offset.toString() });
+  const res = await fetch(`${API_BASE}/terminal/customers?${params.toString()}`, { headers: authHeaders(token) });
+  return handleResponse<Customer[]>(res);
+}
+
+export async function createCustomer(token: string, data: { name: string; phone?: string; email?: string }): Promise<Customer> {
+  const res = await fetch(`${API_BASE}/terminal/customers`, {
+    method: 'POST',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Customer>(res);
 }
 
 // ── Kitchen Display ──────────────────────────────────────────

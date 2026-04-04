@@ -7,15 +7,28 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from supabase import Client
 
+import time
 from app.config import settings
 from app.db import get_db, get_auth_client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
+# 5-minute memory cache to prevent massive API blocking storms
+_auth_cache: dict[str, tuple[dict, float]] = {}
+
 def get_now_utc() -> datetime:
     return datetime.utcnow()
 
 def get_current_user(db: Client = Depends(get_db), auth_client: Client = Depends(get_auth_client), token: str = Depends(oauth2_scheme)) -> dict:
+    now = time.time()
+    
+    # 1. Check in-memory cache first (drastic latency reduction)
+    if token in _auth_cache:
+        cached_profile, expires_at = _auth_cache[token]
+        if now < expires_at:
+            return cached_profile
+            
+    # 2. Hit Network (Cache Miss)
     try:
         user_response = auth_client.auth.get_user(token)
         user_id = user_response.user.id
@@ -45,9 +58,13 @@ def get_current_user(db: Client = Depends(get_db), auth_client: Client = Depends
         insert_res = db.table("profiles").insert(new_profile).execute()
         if not insert_res.data:
              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found and auto-repair failed")
-        return insert_res.data[0]
+        profile = insert_res.data[0]
+    else:
+        profile = response.data[0]
         
-    return response.data[0]
+    # Save to cache for 5 minutes
+    _auth_cache[token] = (profile, now + 300)
+    return profile
 
 def require_role(*roles: str):
     def _dep(user: dict = Depends(get_current_user)) -> dict:

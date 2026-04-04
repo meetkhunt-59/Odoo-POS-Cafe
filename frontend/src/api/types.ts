@@ -124,6 +124,15 @@ export interface PaymentSummary {
   total_amount: number;
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  total_sales: number;
+  created_at: string;
+}
+
 // Cart item type used only on the frontend
 export interface CartItem {
   product: Product;
