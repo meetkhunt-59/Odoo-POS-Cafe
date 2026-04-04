@@ -26,7 +26,8 @@ export default function OrderPanel() {
     setOrderNote,
     orderType,
     setOrderType,
-    markTableBusy
+    markTableBusy,
+    activeOrder
   } = usePosStore();
 
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
@@ -80,7 +81,6 @@ export default function OrderPanel() {
       if (selectedTableId && orderType !== 'Take Away') {
         markTableBusy(selectedTableId, true);
       }
-      alert(`Order #${order.order_number} sent to kitchen!`);
     } catch (err: any) {
       alert(`Failed to send order: ${err.message}`);
     }
@@ -229,7 +229,7 @@ export default function OrderPanel() {
             }
             navigate('/pos/payment');
           }}
-          disabled={cart.length === 0}
+          disabled={cart.length === 0 || (orderType === 'Dine In' && !activeOrder)}
         >
           Pay Now
         </button>
