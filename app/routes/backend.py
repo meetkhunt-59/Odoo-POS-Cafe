@@ -468,6 +468,9 @@ def delete_payment_method(
 @router.get("/dashboard/stats", response_model=DashboardStatsResponse)
 def get_dashboard_stats(
     period: str = "all",
+    employee_id: str = "all",
+    session_id: str = "all",
+    product_id: str = "all",
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
@@ -483,7 +486,9 @@ def get_dashboard_stats(
         elif period == "last7":
             start_date = (now - timedelta(days=7)).isoformat()
             
-        if not start_date:
+        use_native_sql = not start_date and employee_id == "all" and session_id == "all" and product_id == "all"
+        
+        if use_native_sql:
             kpi_res = db.table("v_kpi_summary").select("*").execute()
             kpi_data = kpi_res.data[0] if kpi_res.data else {"total_lifetime_orders": 0, "lifetime_revenue": 0, "average_order_value": 0}
             
@@ -539,33 +544,41 @@ def get_dashboard_stats(
                 "top_orders": top_orders
             }
         else:
-            # Native Python Aggregation for specific periods
-            orders_q = db.table("orders").select("id, order_number, created_at, payment_status, total_amount").eq("payment_status", "paid").gte("created_at", start_date).execute()
-            orders = orders_q.data or []
-            
-            total_orders = len(orders)
-            revenue = sum(float(o["total_amount"]) for o in orders)
-            avg = revenue / total_orders if total_orders > 0 else 0
-            
-            daily_aggregates = {}
-            for o in orders:
-                day = o["created_at"][:10]
-                daily_aggregates[day] = daily_aggregates.get(day, 0) + float(o["total_amount"])
+            # Python Aggregation
+            orders_q = db.table("orders").select("id, order_number, created_at, payment_status, total_amount, pos_sessions!inner(id, responsible_user_id)").eq("payment_status", "paid")
+            if start_date:
+                orders_q = orders_q.gte("created_at", start_date)
+            if session_id != "all":
+                orders_q = orders_q.eq("pos_sessions.id", session_id)
+            if employee_id != "all":
+                orders_q = orders_q.eq("pos_sessions.responsible_user_id", employee_id)
                 
-            line_chart = [{"name": day, "sales": amt} for day, amt in sorted(daily_aggregates.items())]
+            orders_res = orders_q.execute()
+            orders = orders_res.data or []
             
-            order_ids = [o["id"] for o in orders]
+            order_map = {o["id"]: o for o in orders}
+            order_ids = list(order_map.keys())
+            
             top_products = []
             pie_chart = []
             top_categories = []
+            top_orders = []
             items = []
             
+            revenue = 0
+            total_orders_count = 0
+            daily_aggregates = {}
+            
+            line_chart = []
+            avg = 0
+            
             if order_ids:
-                # Handle large chunks if there are too many orders (Supabase IN clause limit)
-                # For POS Cafe, we slice up to 200 orders safely
                 safe_order_ids = order_ids[:200]
                 items_res = db.table("order_items").select("quantity, price_at_checkout, product_id, order_id").in_("order_id", safe_order_ids).execute()
                 items = items_res.data or []
+                
+                if product_id != "all":
+                    items = [i for i in items if str(i["product_id"]) == str(product_id)]
                 
                 if items:
                     p_ids = list(set([i["product_id"] for i in items]))
@@ -578,6 +591,7 @@ def get_dashboard_stats(
                     
                     prod_agg = {}
                     cat_agg = {}
+                    valid_order_ids = set()
                     
                     for item in items:
                         pid = item["product_id"]
@@ -587,48 +601,71 @@ def get_dashboard_stats(
                         qty = item["quantity"]
                         rev = qty * float(item["price_at_checkout"])
                         
+                        revenue += rev
+                        valid_order_ids.add(item["order_id"])
+                        
                         prod_agg[p["name"]] = prod_agg.get(p["name"], 0) + qty
                         
                         cname = categories.get(p["category_id"], "Unknown")
                         cat_agg[cname] = cat_agg.get(cname, 0.0) + rev
                         
+                        # Graph aggregation
+                        o = order_map.get(item["order_id"])
+                        if o:
+                            day = o["created_at"][:10]
+                            daily_aggregates[day] = daily_aggregates.get(day, 0) + rev
+
+                    total_orders_count = len(valid_order_ids)
+                    
                     sorted_prods = sorted(prod_agg.items(), key=lambda x: x[1], reverse=True)[:5]
                     top_products = [{"name": sp[0], "sold": sp[1]} for sp in sorted_prods]
                     
                     sorted_cats = sorted(cat_agg.items(), key=lambda x: x[1], reverse=True)
                     total_cat_rev = sum(cat_agg.values())
                     
-                    for cat_name, cat_rev in sorted_cats:
+                    for cat_name, cat_rev in sorted_cats[:5]:
                         pie_chart.append({"name": cat_name, "value": cat_rev})
                         pct = f"{(cat_rev / total_cat_rev * 100):.1f}%" if total_cat_rev > 0 else "0%"
                         top_categories.append({"name": cat_name, "percentage": pct})
                         
-            top_orders_list = sorted(orders, key=lambda x: float(x["total_amount"]), reverse=True)[:5]
-            top_orders_formatted = []
-            for o in top_orders_list:
-                try: date_str = o["created_at"][:16].replace("T", " ")
-                except: date_str = o["created_at"]
-                
-                qty = 0
-                if items:
-                    qty = sum(i["quantity"] for i in items if i["order_id"] == o["id"])
-                    
-                top_orders_formatted.append({
-                    "order_number": f"ORD-{o['order_number']}",
-                    "date": date_str,
-                    "items": qty,
-                    "total": o["total_amount"],
-                    "status": o["payment_status"].capitalize()
-                })
-                
+                    vo_list = [order_map[oid] for oid in valid_order_ids]
+                    top_orders_list = sorted(vo_list, key=lambda x: float(x["total_amount"]), reverse=True)[:5]
+                    for o in top_orders_list:
+                        try: date_str = o["created_at"][:16].replace("T", " ")
+                        except: date_str = o["created_at"]
+                        
+                        oi_count = sum([i["quantity"] for i in items if i["order_id"] == o["id"]])
+                        
+                        # Correct total calculation reflecting either full order or just filtered items
+                        if product_id != "all":
+                            total_amt = sum([i["quantity"] * float(i["price_at_checkout"]) for i in items if i["order_id"] == o["id"]])
+                        else:
+                            total_amt = float(o["total_amount"])
+
+                        top_orders.append({
+                            "order_number": f"ORD-{o['order_number']}",
+                            "date": date_str,
+                            "items": oi_count,
+                            "total": total_amt,
+                            "status": o["payment_status"].capitalize()
+                        })
+
+                line_chart = [{"name": day, "sales": amt} for day, amt in sorted(daily_aggregates.items())]
+                avg = revenue / total_orders_count if total_orders_count > 0 else 0
+
             return {
-                "kpis": {"total_orders": total_orders, "revenue": revenue, "average_order": avg},
+                "kpis": {
+                    "total_orders": total_orders_count,
+                    "revenue": revenue,
+                    "average_order": avg,
+                },
                 "line_chart": line_chart,
                 "pie_chart": pie_chart,
                 "top_products": top_products[:5],
                 "top_categories": top_categories[:5],
-                "top_orders": top_orders_formatted
+                "top_orders": top_orders
             }
+
     except Exception as e:
         import traceback
         traceback.print_exc()

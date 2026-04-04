@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -16,23 +16,28 @@ export default function Dashboard({ products }: DashboardProps) {
   const token = useAuthStore((s) => s.token)!;
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
+  
+  // Filters
   const [period, setPeriod] = useState('all');
+  const [employeeId, setEmployeeId] = useState('all');
+  const [sessionId, setSessionId] = useState('all');
+  const [productId, setProductId] = useState('all');
 
   useEffect(() => {
     loadStats();
 
     // Auto-refresh stats every 10 seconds for "live" updates
     const intervalId = setInterval(() => {
-      fetchDashboardStats(token, period).then(data => setStats(data)).catch(console.error);
+      fetchDashboardStats(token, period, employeeId, sessionId, productId).then(data => setStats(data)).catch(console.error);
     }, 10000);
 
     return () => clearInterval(intervalId);
-  }, [period]);
+  }, [period, employeeId, sessionId, productId]);
 
   const loadStats = async () => {
     try {
       setLoading(true);
-      const data = await fetchDashboardStats(token, period);
+      const data = await fetchDashboardStats(token, period, employeeId, sessionId, productId);
       setStats(data);
     } catch (err) {
       console.error(err);
@@ -41,12 +46,34 @@ export default function Dashboard({ products }: DashboardProps) {
     }
   };
 
+  const handleExportXLS = () => {
+    if (!stats) return;
+    let csv = "Order Number,Date,Items,Total,Status\n";
+    (stats.top_orders || []).forEach((o: any) => {
+      csv += `"${o.order_number}","${o.date}","${o.items}","${o.total}","${o.status}"\n`;
+    });
+    
+    // Convert to Blob and download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `dashboard_export_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   // Odoo App Color Palette
   const PIE_COLORS = ['#714B67', '#00A09D', '#374151', '#8E6381'];
 
   return (
     <div className="backend-section dashboard-section">
-      <div className="dashboard-top-bar">
+      <div className="dashboard-top-bar hide-on-print">
         <div className="dashboard-filters">
           <select value={period} onChange={(e) => setPeriod(e.target.value)}>
             <option value="today">Today</option>
@@ -54,22 +81,22 @@ export default function Dashboard({ products }: DashboardProps) {
             <option value="last7">Last 7 Days</option>
             <option value="all">All Time</option>
           </select>
-          <select defaultValue="all">
+          <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
             <option value="all">All Employees</option>
             <option value="admin">Administrator</option>
           </select>
-          <select defaultValue="all">
+          <select value={sessionId} onChange={(e) => setSessionId(e.target.value)}>
             <option value="all">All Sessions</option>
             <option value="s1">Session #0012</option>
           </select>
-          <select defaultValue="all">
+          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
             <option value="all">All Products</option>
             {products.slice(0, 10).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
         <div className="dashboard-actions">
-          <button className="export-btn odoo-btn-outline"><FileText size={16} /> PDF</button>
-          <button className="export-btn odoo-btn-outline"><Download size={16} /> XLS</button>
+          <button className="export-btn odoo-btn-outline" onClick={handleExportPDF}><FileText size={16} /> Print Report</button>
+          <button className="export-btn odoo-btn-outline" onClick={handleExportXLS}><Download size={16} /> Export CSV</button>
         </div>
       </div>
 

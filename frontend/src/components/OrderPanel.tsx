@@ -138,8 +138,8 @@ export default function OrderPanel() {
       <div className="order-items-scroll">
         {cart.length === 0 && (
           <div className="cart-empty">
-            <p>Cart is empty</p>
-            <span>Tap products to add them</span>
+            <span style={{ fontSize: '32px' }}>☕</span>
+            <span>Select product</span>
           </div>
         )}
         {cart.map((item) => (
@@ -205,13 +205,15 @@ export default function OrderPanel() {
 
       {/* Action Buttons: Side by Side */}
       <div className="cta-container dual-actions">
-        <button
-          className="send-kitchen-btn"
-          onClick={handleSendToKitchen}
-          disabled={cart.length === 0}
-        >
-          Send to Kitchen
-        </button>
+        {orderType === 'Dine In' && (
+           <button
+             className="send-kitchen-btn"
+             onClick={handleSendToKitchen}
+             disabled={cart.length === 0}
+           >
+             Send to Kitchen
+           </button>
+        )}
         <button
           className="pay-btn"
           onClick={async () => {
@@ -229,7 +231,7 @@ export default function OrderPanel() {
           }}
           disabled={cart.length === 0}
         >
-          {cart.length === 0 ? 'Payment' : `Pay ₹${total.toFixed(2)}`}
+          Pay Now
         </button>
       </div>
 

@@ -395,11 +395,19 @@ export async function createPublicOrder(token: string, payload: any): Promise<Or
 }
 // ── Dashboard ────────────────────────────────────────────────
 
-export async function fetchDashboardStats(token: string, period: string = 'all'): Promise<any> {
+export async function fetchDashboardStats(
+  token: string,
+  period: string = 'all',
+  employee_id: string = 'all',
+  session_id: string = 'all',
+  product_id: string = 'all'
+): Promise<any> {
   const params = new URLSearchParams();
-  if (period !== 'all') {
-    params.set('period', period);
-  }
+  if (period !== 'all') params.set('period', period);
+  if (employee_id !== 'all') params.set('employee_id', employee_id);
+  if (session_id !== 'all') params.set('session_id', session_id);
+  if (product_id !== 'all') params.set('product_id', product_id);
+  
   const url = `${API_BASE}/backend/dashboard/stats${params.toString() ? '?' + params.toString() : ''}`;
   const res = await fetch(url, { headers: authHeaders(token) });
   return handleResponse<any>(res);

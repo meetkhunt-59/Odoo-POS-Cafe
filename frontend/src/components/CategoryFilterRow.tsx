@@ -23,7 +23,7 @@ export default function CategoryFilterRow({ categories, selectedId, onSelect }: 
             className={`category-card ${selectedId === cat.id ? 'active' : ''}`}
             onClick={() => onSelect(cat.id)}
           >
-            <div className="cat-icon">{cat.icon}</div>
+            {cat.icon && <div className="cat-icon">{cat.icon}</div>}
             <span className="cat-name">{cat.name}</span>
             <span className="cat-count">{cat.itemCount} Items</span>
           </button>

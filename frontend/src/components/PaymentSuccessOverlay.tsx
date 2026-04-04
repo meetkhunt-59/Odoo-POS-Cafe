@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronRight, Printer, Share2 } from 'lucide-react';
+import { CheckCircle2, ChevronRight } from 'lucide-react';
 import './PaymentSuccessOverlay.css';
 
 interface Props {
@@ -31,15 +31,6 @@ export default function PaymentSuccessOverlay({ orderNumber, total, onClose }: P
           </div>
         </div>
 
-        <div className="success-actions">
-           <button className="print-btn">
-             <Printer size={20} />
-             Print Receipt
-           </button>
-           <button className="share-btn">
-             <Share2 size={20} />
-           </button>
-        </div>
 
         <button className="done-btn" onClick={onClose}>
           Done & Next Order

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
-import { Loader2, Filter, ArrowLeft } from 'lucide-react';
+import { Loader2, Filter, ArrowLeft, Clock, ChefHat, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './KitchenPage.css';
 
@@ -125,6 +125,7 @@ export default function KitchenPage() {
             className={`nav-btn ${activeTab === 'to_cook' ? 'active' : ''}`}
             onClick={() => setActiveTab('to_cook')}
           >
+            <Clock size={16} />
             <span>To Cook</span>
             <span className="cart-badge">{orders.filter(o => o.kitchen_status === 'to_cook').length}</span>
           </button>
@@ -135,8 +136,9 @@ export default function KitchenPage() {
             className={`nav-btn ${activeTab === 'preparing' ? 'active' : ''}`}
             onClick={() => setActiveTab('preparing')}
           >
+            <ChefHat size={16} />
             <span>Preparing</span>
-            <span className="cart-badge" style={{ backgroundColor: '#10B981' }}>
+            <span className="cart-badge" style={{ backgroundColor: '#F5D19B', color: '#1A1A1A' }}>
               {orders.filter(o => o.kitchen_status === 'preparing').length}
             </span>
           </button>
@@ -147,8 +149,9 @@ export default function KitchenPage() {
             className={`nav-btn ${activeTab === 'completed' ? 'active' : ''}`}
             onClick={() => setActiveTab('completed')}
           >
+            <CheckCircle size={16} />
             <span>Completed</span>
-            <span className="cart-badge" style={{ backgroundColor: '#3B82F6' }}>
+            <span className="cart-badge" style={{ backgroundColor: '#1A1A1A', color: 'white' }}>
               {orders.filter(o => o.kitchen_status === 'completed').length}
             </span>
           </button>

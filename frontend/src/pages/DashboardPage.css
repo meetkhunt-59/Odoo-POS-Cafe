@@ -52,8 +52,6 @@
 .pos-dashboard-main {
   flex: 1;
   padding: 48px;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -61,7 +59,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .pos-register-card {
@@ -258,6 +256,7 @@
   padding: 20px 24px;
   border-top: 1px solid #F3F4F6;
   background-color: #FFFFFF;
+  margin-top: auto;
 }
 
 .btn-open-session {

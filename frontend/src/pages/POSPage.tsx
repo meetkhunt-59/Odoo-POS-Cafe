@@ -21,11 +21,11 @@ export default function POSPage() {
 
   // Build category list for filter row (prepend "All")
   const filterCategories = [
-    { id: 'all', name: 'All', icon: '🍽️', itemCount: Math.max(0, products?.length || 0) },
+    { id: 'all', name: 'All', icon: '', itemCount: Math.max(0, products?.length || 0) },
     ...(categories || []).map((c) => ({
       id: c.id,
       name: c.name,
-      icon: '📂',
+      icon: '',
       itemCount: c.product_count || 0,
     })),
   ];

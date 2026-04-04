@@ -35,9 +35,7 @@ export default function DashboardPage() {
   }, [token]);
 
   const handleOpenSession = () => {
-    // Step 1: Initiation: indicate a new customer has arrived
     resetForNewCustomer();
-    // Step 2: Location Selection
     navigate('/pos/tables');
   };
 
@@ -51,81 +49,78 @@ export default function DashboardPage() {
     <div className="pos-dashboard-root">
       <DashboardNavbar />
 
-
       <main className="pos-dashboard-main">
         <div className="pos-grid">
-
-          {posList.length === 0 ? (
-            <div className="empty-state-pos" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '12px', border: '1px dashed #D1D5DB' }}>
-              <h3 style={{ color: '#374151', fontSize: '20px', marginBottom: '12px' }}>No Point of Sales configured</h3>
-              <p style={{ color: '#6B7280', marginBottom: '24px' }}>Get started by configuring your first physical or virtual register.</p>
-              <button
-                onClick={() => navigate('/settings')}
-                style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: '500', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-              >
-                <Plus size={16} /> Create Point of Sale
-              </button>
-            </div>
-          ) : (
-            posList.map(pos => (
-              <div key={pos.id} className="pos-register-card">
-                <div className="card-top-accent"></div>
-                <div className="card-header">
-                  <h2 className="register-name">{pos.name}</h2>
-                  <div className="options-dropdown-container">
-                    <button className="register-options" onClick={() => toggleDropdown(pos.id)}>
-                      <MoreVertical size={20} />
-                    </button>
-
-                    {dropdownOpenId === pos.id && (
-                      <div className="options-menu-popup">
-                        <button className="dropdown-menu-item" onClick={() => navigate('/settings')}>
-                          <Settings size={16} /> Settings
-                        </button>
-                        <button className="dropdown-menu-item" onClick={() => navigate('/pos/kitchen')}>
-                          <Monitor size={16} /> Kitchen Display
-                        </button>
-                        <button className="dropdown-menu-item" onClick={() => {
-                          setDropdownOpenId(null);
-                          window.open('/pos/customer-display', 'CustomerDisplay', 'width=1024,height=768');
-                        }}>
-                          <MonitorPlay size={16} /> Customer Display
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="card-content">
-                  <div className="status-row">
-                    <div className="status-indicator active"></div>
-                    <span className="status-text">Ready to Open</span>
-                  </div>
-
-                  <div className="register-stats">
-                    <div className="stat-line">
-                      <span className="stat-label">Last closing cash</span>
-                      <span className="stat-value">₹ {cashTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="stat-line">
-                      <span className="stat-label">Supported</span>
-                      <span className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>
-                        {[pos.cash_enabled && 'Cash', pos.card_enabled && 'Card', pos.upi_enabled && 'UPI'].filter(Boolean).join(', ')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card-footer">
-                  <button className="btn-open-session" onClick={handleOpenSession}>
-                    Open Session
+          
+          {posList.map(pos => (
+            <div key={pos.id} className="pos-register-card">
+              <div className="card-top-accent"></div>
+              <div className="card-header">
+                <h2 className="register-name">{pos.name}</h2>
+                <div className="options-dropdown-container">
+                  <button className="register-options" onClick={() => toggleDropdown(pos.id)}>
+                    <MoreVertical size={20} />
                   </button>
+
+                  {dropdownOpenId === pos.id && (
+                    <div className="options-menu-popup">
+                      <button className="dropdown-menu-item" onClick={() => navigate('/settings')}>
+                        <Settings size={16} /> Settings
+                      </button>
+                      <button className="dropdown-menu-item" onClick={() => navigate('/pos/kitchen')}>
+                        <Monitor size={16} /> Kitchen Display
+                      </button>
+                      <button className="dropdown-menu-item" onClick={() => {
+                        setDropdownOpenId(null);
+                        window.open('/pos/customer-display', 'CustomerDisplay', 'width=1024,height=768');
+                      }}>
+                        <MonitorPlay size={16} /> Customer Display
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            ))
-          )}
 
+              <div className="card-content">
+                <div className="status-row">
+                  <div className="status-indicator active"></div>
+                  <span className="status-text">Ready to Open</span>
+                </div>
 
+                <div className="register-stats">
+                  <div className="stat-line">
+                    <span className="stat-label">Last closing cash</span>
+                    <span className="stat-value">₹ {cashTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="stat-line">
+                    <span className="stat-label">Supported</span>
+                    <span className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>
+                      {[pos.cash_enabled && 'Cash', pos.card_enabled && 'Card', pos.upi_enabled && 'UPI'].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-footer">
+                <button className="btn-open-session" onClick={handleOpenSession}>
+                  Open Session
+                </button>
+              </div>
+            </div>
+          ))}
+          
+          {/* Add New POS Card */}
+          <div 
+            className="pos-register-card add-new-pos-card" 
+            onClick={() => navigate('/settings')}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'transparent', border: '2px dashed #D1D5DB', minHeight: '260px', boxShadow: 'none' }}
+          >
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Plus size={32} color="var(--primary)" />
+            </div>
+            <h3 style={{ color: '#374151', fontSize: '18px', fontWeight: '600', margin: '0 0 4px 0' }}>New Point of Sale</h3>
+            <p style={{ color: '#6B7280', fontSize: '13px', margin: '0' }}>Configure a new register</p>
+          </div>
 
         </div>
       </main>

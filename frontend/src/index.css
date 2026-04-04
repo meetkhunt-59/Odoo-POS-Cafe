@@ -1,18 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap');
 
 :root {
-  /* Premium Odoo Palette */
-  --primary:        #5D4057;   /* Sophisticated Mauve/Purple */
-  --primary-light:  #F5F0F5;   /* Very light mauve for backgrounds */
-  --accent-orange:  #FF8F00;   /* Vibrant but balanced orange */
+  /* Minimalist Monotone & Beige Palette */
+  --primary:        #1A1A1A;   /* Pure Dark Grey/Black */
+  --primary-light:  #E8E8E8;   /* Light Grey for subtle backgrounds/hovers */
+  --primary-hover:  #2D2D2D;
+  --primary-mid:    #AAAAAA;
   
-  --bg-app:         #F9FAFB;   /* Clean modern grey-white */
-  --bg-card:        #FFFFFF;
-  --text-primary:   #111827;   /* Near black for readability */
-  --text-secondary: #4B5563;   /* Slate grey for subtext */
+  --accent-beige:   #F5D19B;   /* The pale gold/tan mapping to primary actions like Pay Now */
+  --accent-hover:   #E4BE85;
+  --accent-text:    #1A1A1A;   /* Dark text on accent buttons by default */
+  --accent-orange:  #F5D19B;   /* Legacy mapping */
   
-  --border-light:   #E5E7EB;
-  --border-strong:  #6B7280;
+  --bg-app:         #FAFAFA;   /* Clean modern white-grey app background */
+  --bg-card:        #F4F2F0;   /* Warm light beige/grey background for product cards */
+  --text-primary:   #1A1A1A;   /* Near black */
+  --text-secondary: #595959;   /* Slate grey for subtext */
+  
+  --border-light:   #EAEAEA;
+  --border-strong:  #CCCCCC;
 }
 
 * {

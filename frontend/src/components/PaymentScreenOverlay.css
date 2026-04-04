@@ -1,7 +1,7 @@
 .payment-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(26, 26, 26, 0.8);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -20,7 +20,7 @@
   background: white;
   width: 100%;
   max-width: 600px;
-  border-radius: 32px;
+  border-radius: 0;
   padding: 32px;
   box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -37,18 +37,18 @@
 .payment-header h2 {
   font-size: 24px;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #1A1A1A;
 }
 
 .close-btn {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
+  border-radius: 0;
+  border: 1px solid #E5E7EB;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -60,25 +60,25 @@
 }
 
 .payment-total-display {
-  background: #f8fafc;
+  background: #F4F2F0;
   padding: 24px;
-  border-radius: 20px;
+  border-radius: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid #E5E7EB;
 }
 
 .payment-total-display span {
   font-size: 16px;
   font-weight: 600;
-  color: #64748b;
+  color: #6B7280;
 }
 
 .total-due {
   font-size: 32px;
   font-weight: 900;
-  color: var(--primary);
+  color: #1A1A1A;
 }
 
 .payment-methods-grid {
@@ -89,8 +89,8 @@
 
 .payment-method-card {
   height: 120px;
-  border-radius: 20px;
-  border: 2px solid var(--border);
+  border-radius: 0;
+  border: 2px solid #E5E7EB;
   background: white;
   display: flex;
   flex-direction: column;
@@ -98,8 +98,8 @@
   justify-content: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  color: #64748b;
+  transition: all 0.2s ease;
+  color: #6B7280;
 }
 
 .payment-method-card span {
@@ -109,38 +109,39 @@
 
 .payment-method-card:hover {
   transform: translateY(-4px);
-  border-color: var(--primary-mid);
-  background: #f8fafc;
+  border-color: #1A1A1A;
+  background: #FAFAFA;
 }
 
 .payment-method-card.active {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 10px 20px rgba(42, 124, 79, 0.1);
+  background: #F4F2F0;
+  border-color: #1A1A1A;
+  color: #1A1A1A;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .confirm-payment-btn {
   width: 100%;
   height: 72px;
-  border-radius: 24px;
-  background: var(--primary);
+  border-radius: 0;
+  background: #1A1A1A;
   color: white;
   font-size: 20px;
   font-weight: 900;
-  box-shadow: 0 12px 32px rgba(42, 124, 79, 0.3);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.2s ease;
   border: none;
 }
 
 .confirm-payment-btn:hover:not(:disabled) {
   transform: translateY(-4px);
-  box-shadow: 0 20px 48px rgba(42, 124, 79, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .confirm-payment-btn:disabled {
-  background: #cbd5e1;
+  background: #E5E7EB;
+  color: #9CA3AF;
   box-shadow: none;
   cursor: not-allowed;
 }

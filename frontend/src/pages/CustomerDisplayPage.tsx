@@ -17,7 +17,7 @@ export default function CustomerDisplayPage() {
     <div className="cfd-container">
       <div className="cfd-main">
         <header className="cfd-header">
-           <div className="brand">Odoo POS Cafe 🌿</div>
+           <div className="brand">Odoo POS Cafe </div>
            <div className="table-info">
              {selectedTable ? `Table ${selectedTable.table_number}` : 'Welcome!'}
            </div>
@@ -35,11 +35,17 @@ export default function CustomerDisplayPage() {
               ) : cart.length === 0 ? (
                 <div className="empty-msg">Your items will appear here...</div>
               ) : (
-                <div className="cart-list">
+                <div className="cart-list invoice-style">
+                  <div className="invoice-header">
+                    <span className="inv-qty">Qty</span>
+                    <span className="inv-item">Item</span>
+                    <span className="inv-price">Amount</span>
+                  </div>
                   {cart.map(item => (
-                    <div key={item.product.id} className="cart-row">
-                       <span className="item-name-qty">{item.quantity} x {item.product.name}</span>
-                       <span className="price">₹{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                    <div key={item.product.id} className="invoice-row">
+                       <span className="inv-qty">{item.quantity}</span>
+                       <span className="inv-item">{item.product.name}</span>
+                       <span className="inv-price">₹{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
@@ -72,10 +78,6 @@ export default function CustomerDisplayPage() {
       
       <div className="cfd-footer-scroll">
          <span>Special Offer: Get 10% off on your next visit! • Fresh Ingredients Daily • contactless Payment Available</span>
-      </div>
-
-      <div style={{ position: 'absolute', bottom: '80px', left: '40px', fontSize: '15px', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-         Powered by <span style={{ color: '#714B67', fontWeight: 900, fontSize: '18px', letterSpacing: '-0.02em' }}>odoo</span>
       </div>
     </div>
   );

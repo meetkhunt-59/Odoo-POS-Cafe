@@ -14,16 +14,13 @@
 .nav-group-main {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: #f1f5f9; /* Rich creamy slate */
-  padding: 4px;
-  border-radius: 12px;
+  gap: 24px; /* More spaced out for better visibility */
 }
 
 .nav-divider {
   width: 1px;
   height: 24px;
-  background: #cbd5e1;
+  background: var(--border-light);
 }
 
 .nav-dropdown-container {
@@ -31,16 +28,16 @@
 }
 
 .nav-btn {
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 10px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: transparent;
   border: none;
-  color: #64748b;
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-weight: 500;
   font-size: 15px;
   transition: all 0.2s ease;
   cursor: pointer;
@@ -48,14 +45,14 @@
 }
 
 .nav-btn:hover {
-  color: var(--text-primary, #0F172A);
-  background: #e2e8f0;
+  color: var(--text-primary);
+  background: var(--bg-card);
 }
 
 .nav-btn.active {
-  background: white;
-  color: var(--primary, #6366F1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .chevron {

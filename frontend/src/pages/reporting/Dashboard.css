@@ -201,3 +201,36 @@
   background: #fef2f2;
   color: #ef4444;
 }
+
+/* ── PRINT STYLES ── */
+@media print {
+  .dashboard-terminal-nav,
+  .hide-on-print,
+  .nav-back-master {
+    display: none !important;
+  }
+  
+  body, .pos-dashboard-root, .pos-dashboard-main {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .dashboard-section {
+    padding: 20px !important;
+    width: 100% !important;
+  }
+
+  .kpi-card, .chart-box {
+    box-shadow: none !important;
+    border: 1px solid #E5E7EB !important;
+    break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .kpi-row {
+    margin-bottom: 40px;
+  }
+}

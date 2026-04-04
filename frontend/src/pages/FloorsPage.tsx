@@ -3,13 +3,11 @@ import DashboardNavbar from '../components/DashboardNavbar';
 import { useAuthStore } from '../store/authStore';
 import { usePosStore } from '../store/posStore';
 import * as api from '../api/client';
-import { Plus, Trash2, Loader2, X, Activity, Users, ArrowLeft, Power } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Trash2, Loader2, X, Users, Power, Edit } from 'lucide-react';
 import './TransactionsPage.css';
 import './CustomersPage.css';
 
 export default function FloorsPage() {
-  const navigate = useNavigate();
   const token = useAuthStore(s => s.token)!;
   const { floors, fetchFloors } = usePosStore();
   const [loading, setLoading] = useState(false);
@@ -24,6 +22,7 @@ export default function FloorsPage() {
   const [tableNumberInput, setTableNumberInput] = useState('');
   const [tableSeatsInput, setTableSeatsInput] = useState('');
   const [isSubmittingTable, setIsSubmittingTable] = useState(false);
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -72,16 +71,25 @@ export default function FloorsPage() {
 
   const handleCreateTable = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tableNumberInput.trim() || !activeFloorId) return;
+    if (!tableNumberInput.trim()) return;
     setIsSubmittingTable(true);
     try {
-      await api.createTable(token, {
-        floor_id: activeFloorId,
-        table_number: tableNumberInput.trim(),
-        seats: parseInt(tableSeatsInput, 10) || 2
-      });
+      if (editingTableId) {
+        await api.updateTable(token, editingTableId, {
+          table_number: tableNumberInput.trim(),
+          seats: parseInt(tableSeatsInput, 10) || 2
+        });
+      } else {
+        if (!activeFloorId) return;
+        await api.createTable(token, {
+          floor_id: activeFloorId,
+          table_number: tableNumberInput.trim(),
+          seats: parseInt(tableSeatsInput, 10) || 2
+        });
+      }
       setTableNumberInput('');
       setTableSeatsInput('');
+      setEditingTableId(null);
       setTableModalOpen(false);
       await fetchFloors(token);
     } catch (err: any) {
@@ -113,19 +121,19 @@ export default function FloorsPage() {
 
       <main className="pos-dashboard-main">
         <div className="transactions-header customers-header-flex">
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#4B5563', fontWeight: 600, padding: '0 8px 0 0' }}>
-                <ArrowLeft size={20} /> Back
-              </button>
-              <h1 className="header-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <LayersIcon /> Restaurant Architecture
-              </h1>
-            </div>
-            <p style={{ color: '#6B7280', marginTop: '4px', fontSize: '14px', marginLeft: '80px' }}>Map out structural boundaries and optimize table flow for your operational dispatch.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h1 className="header-title" style={{ color: '#1A1A1A', fontSize: '24px', letterSpacing: '-0.02em', margin: 0 }}>
+              Floors & Tables
+            </h1>
           </div>
-          <button className="btn-add-customer" onClick={() => setFloorModalOpen(true)}>
-            <Plus size={16} /> Deploy New Floor
+          <button 
+            onClick={() => setFloorModalOpen(true)}
+            style={{ 
+              background: '#1A1A1A', color: 'white', padding: '10px 16px', borderRadius: '8px', 
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500, fontSize: '14px' 
+            }}
+          >
+            <Plus size={16} /> Add Floor
           </button>
         </div>
 
@@ -133,55 +141,56 @@ export default function FloorsPage() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '64px' }}><Loader2 className="spinner" size={32} style={{ color: 'var(--primary)', margin: '0 auto' }} /></div>
         ) : floors.length === 0 ? (
-          <div className="transactions-card slide-down" style={{ padding: '80px', textAlign: 'center', color: '#6B7280' }}>
-            <Activity size={48} style={{ opacity: 0.2, margin: '0 auto 16px' }} />
-            <h3>No Architectural Layout Defined.</h3>
-            <p style={{ marginTop: '8px', fontSize: '14px', maxWidth: '400px', margin: '8px auto 0' }}>Deploy your first Floor Level to automatically generate an optimal 5-table routing grid.</p>
+          <div className="transactions-card slide-down" style={{ padding: '80px', textAlign: 'center', background: '#FFFFFF', borderRadius: '16px' }}>
+            <h3 style={{ color: '#1A1A1A' }}>No Floors Found</h3>
+            <p style={{ color: '#6B7280', fontSize: '14px', marginTop: '8px' }}>Add a floor to set up your tables.</p>
           </div>
         ) : (
           floors.map(floor => (
             <div key={floor.id} className="transactions-card slide-down" style={{ marginBottom: '24px', overflow: 'visible', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
 
               {/* Floor Header Bar */}
-              <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6', background: '#ffffff', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', color: '#111827' }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#000000' }}></div>
+              <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', background: '#FFFFFF', borderTopLeftRadius: '12px', borderTopRightRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 600, color: '#1A1A1A', margin: 0 }}>
                   {floor.name}
                 </h2>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => handleDeleteFloor(floor.id, floor.name)} style={{ padding: '6px 12px', color: '#EF4444', background: '#FEF2F2', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Trash2 size={14} /> Demolish
+                  <button onClick={() => handleDeleteFloor(floor.id, floor.name)} style={{ padding: '6px 12px', color: '#1A1A1A', background: 'transparent', border: '1px solid #E5E7EB', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Trash2 size={14} /> Remove
                   </button>
-                  <button onClick={() => { setActiveFloorId(floor.id); setTableModalOpen(true); }} style={{ padding: '6px 12px', background: 'var(--primary)', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Plus size={14} /> Insert Table
+                  <button onClick={() => { setActiveFloorId(floor.id); setEditingTableId(null); setTableNumberInput(''); setTableSeatsInput(''); setTableModalOpen(true); }} style={{ padding: '6px 12px', background: '#1A1A1A', color: 'white', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Plus size={14} /> Add Table
                   </button>
                 </div>
               </div>
 
               {/* Table Map Visualizer */}
-              <div style={{ padding: '24px', background: '#F9FAFB', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+              <div style={{ padding: '24px', background: '#F4F2F0', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
                 {floor.tables.length === 0 ? (
-                  <div style={{ color: '#9CA3AF', fontSize: '14px', fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>Structural grid is empty. Plot tables above to begin routing.</div>
+                  <div style={{ color: '#9CA3AF', fontSize: '14px', textAlign: 'center', padding: '20px 0' }}>No tables on this floor.</div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
                     {floor.tables.map(table => (
                       <div key={table.id} className="premium-table-card" style={{
                         background: 'white', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden'
+                        position: 'relative'
                       }}>
-                        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: table.is_active ? '#000000' : '#D1D5DB' }}></div>
-                        <div style={{ marginLeft: '4px' }}>
-                          <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 500, marginBottom: '4px' }}>IDENTIFIER</div>
-                          <div style={{ fontWeight: 700, color: '#111827', fontSize: '20px', letterSpacing: '-0.02em' }}>Table {table.table_number}</div>
-                          <div style={{ fontSize: '13px', color: '#4B5563', marginTop: '12px', alignItems: 'center', gap: '6px', backgroundColor: '#F3F4F6', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex' }}>
-                            <Users size={12} style={{ color: '#6B7280' }} /> {table.seats}
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#1A1A1A', fontSize: '18px' }}>Table {table.table_number}</div>
+                          <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '4px', alignItems: 'center', gap: '4px', display: 'inline-flex' }}>
+                            <Users size={12} /> {table.seats} Seats
                           </div>
-                          {table.appointment_resource && (
-                            <div style={{ fontSize: '11px', color: '#000000', marginTop: '8px', fontWeight: 600, border: '1px solid #000', padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>Busy</div>
-                          )}
+                          <div style={{ marginTop: '8px' }}>
+                            {table.appointment_resource && (
+                              <span style={{ fontSize: '11px', color: '#1A1A1A', fontWeight: 600, background: '#F5D19B', padding: '2px 6px', borderRadius: '4px' }}>Busy</span>
+                            )}
+                            {!table.is_active && (
+                              <span style={{ fontSize: '11px', color: '#1A1A1A', fontWeight: 600, background: '#E5E7EB', padding: '2px 6px', borderRadius: '4px', marginLeft: table.appointment_resource ? '6px' : '0' }}>Inactive</span>
+                            )}
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -191,7 +200,7 @@ export default function FloorsPage() {
                               } catch (err) { alert("Failed to toggle table occupancy"); }
                             }}
                             title={table.appointment_resource ? "Mark Available" : "Mark Busy"}
-                            style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: table.appointment_resource ? '#000000' : '#ffffff', color: table.appointment_resource ? '#ffffff' : '#000000', borderRadius: '6px', border: '1px solid #000000', display: 'flex', alignItems: 'center' }}
+                            style={{ padding: '6px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: table.appointment_resource ? '#1A1A1A' : 'transparent', color: table.appointment_resource ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A' }}
                           >
                             {table.appointment_resource ? "Busy" : "Avail"}
                           </button>
@@ -203,13 +212,16 @@ export default function FloorsPage() {
                                 fetchFloors(token!);
                               } catch (err) { alert("Failed to toggle table"); }
                             }}
-                            title={table.is_active ? "Deactivate Layout" : "Activate Layout"}
-                            style={{ padding: '6px', cursor: 'pointer', background: table.is_active ? '#000000' : '#ffffff', color: table.is_active ? '#ffffff' : '#000000', borderRadius: '6px', border: '1px solid #000000', display: 'flex' }}
+                            title={table.is_active ? "Deactivate Table" : "Activate Table"}
+                            style={{ padding: '6px', cursor: 'pointer', background: table.is_active ? '#1A1A1A' : 'transparent', color: table.is_active ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A', display: 'flex' }}
                           >
                             <Power size={14} />
                           </button>
-                          <button onClick={() => handleDeleteTable(table.id)} style={{ background: '#F3F4F6', border: 'none', color: '#6B7280', borderRadius: '6px', cursor: 'pointer', padding: '6px', transition: 'color 0.2s' }} title="Remove Structure" className="table-trash-btn">
-                            <Trash2 size={16} />
+                          <button onClick={() => { setEditingTableId(table.id); setTableNumberInput(table.table_number); setTableSeatsInput(table.seats.toString()); setTableModalOpen(true); }} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Edit Table">
+                            <Edit size={14} />
+                          </button>
+                          <button onClick={() => handleDeleteTable(table.id)} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Remove Table">
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>
@@ -222,36 +234,34 @@ export default function FloorsPage() {
         )}
       </main>
 
-      {/* Creation Modal: Floor Planner */}
       {floorModalOpen && (
-        <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)' }}>
-          <div className="customer-modal slide-down" style={{ maxWidth: '420px', padding: 0, borderRadius: '16px', overflow: 'hidden' }}>
-            <div style={{ background: '#111827', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+        <div className="modal-overlay" style={{ backdropFilter: 'none' }}>
+          <div className="customer-modal slide-down" style={{ maxWidth: '420px', padding: 0, borderRadius: '12px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
+            <div style={{ background: '#1A1A1A', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
               <div>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Deploy New Layout</h2>
-                <p style={{ fontSize: '13px', color: '#9CA3AF', margin: '4px 0 0 0' }}>System will automate a robust 5-table blueprint.</p>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>Add New Floor</h2>
               </div>
-              <button onClick={() => setFloorModalOpen(false)} style={{ background: '#374151', color: 'white', border: 'none', padding: '6px', borderRadius: '50%', cursor: 'pointer' }}><X size={16} /></button>
+              <button onClick={() => setFloorModalOpen(false)} style={{ background: 'transparent', color: 'white', border: 'none', padding: '0', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleCreateFloor} style={{ padding: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Floor Blueprint Name *</label>
+                <label style={{ fontSize: '13px', fontWeight: 500, color: '#1A1A1A' }}>Floor Name *</label>
                 <input
                   autoFocus
                   type="text"
                   value={floorNameInput}
                   onChange={e => setFloorNameInput(e.target.value)}
-                  placeholder="e.g., Main Hall, VIP Lounge, Terrace"
+                  placeholder="e.g., Main Hall"
                   required
-                  style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
                   disabled={isSubmittingFloor}
                 />
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="button" onClick={() => setFloorModalOpen(false)} style={{ flex: 1, padding: '12px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer' }} disabled={isSubmittingFloor}>Cancel</button>
-                <button type="submit" disabled={isSubmittingFloor || !floorNameInput.trim()} style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  {isSubmittingFloor ? <Loader2 size={18} className="spinner" /> : 'Instantiate Floor'}
+                <button type="button" onClick={() => setFloorModalOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#1A1A1A', border: '1px solid #E5E7EB', borderRadius: '8px', fontWeight: 500, cursor: 'pointer' }} disabled={isSubmittingFloor}>Cancel</button>
+                <button type="submit" disabled={isSubmittingFloor || !floorNameInput.trim()} style={{ flex: 1, padding: '10px', background: '#1A1A1A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  {isSubmittingFloor ? <Loader2 size={16} className="spinner" /> : 'Save Floor'}
                 </button>
               </div>
             </form>
@@ -259,35 +269,33 @@ export default function FloorsPage() {
         </div>
       )}
 
-      {/* Creation Modal: Individual Table Planner */}
       {tableModalOpen && (
-        <div className="modal-overlay" style={{ backdropFilter: 'blur(4px)' }}>
-          <div className="customer-modal slide-down" style={{ maxWidth: '420px', padding: 0, borderRadius: '16px', overflow: 'hidden' }}>
-            <div style={{ background: 'var(--primary)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+        <div className="modal-overlay" style={{ backdropFilter: 'none' }}>
+          <div className="customer-modal slide-down" style={{ maxWidth: '420px', padding: 0, borderRadius: '12px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
+            <div style={{ background: '#1A1A1A', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
               <div>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Mount Custom Table</h2>
-                <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', margin: '4px 0 0 0' }}>Manually slot a unique table onto the active grid.</p>
+                <h2 style={{ fontSize: '16px', fontWeight: 600, margin: 0 }}>{editingTableId ? 'Edit Table' : 'Add New Table'}</h2>
               </div>
-              <button onClick={() => setTableModalOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '6px', borderRadius: '50%', cursor: 'pointer' }}><X size={16} /></button>
+              <button onClick={() => setTableModalOpen(false)} style={{ background: 'transparent', color: 'white', border: 'none', padding: '0', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
             <form onSubmit={handleCreateTable} style={{ padding: '24px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Table Identifier Code *</label>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: '#1A1A1A' }}>Table Name / Number *</label>
                   <input
                     autoFocus
                     type="text"
                     value={tableNumberInput}
                     onChange={e => setTableNumberInput(e.target.value)}
-                    placeholder="e.g., T6, Balcony-1"
+                    placeholder="e.g., T6"
                     required
-                    style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
                     disabled={isSubmittingTable}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Optimal Seat Capacity *</label>
+                  <label style={{ fontSize: '13px', fontWeight: 500, color: '#1A1A1A' }}>Seats *</label>
                   <input
                     type="number"
                     min="1"
@@ -295,15 +303,15 @@ export default function FloorsPage() {
                     onChange={e => setTableSeatsInput(e.target.value)}
                     placeholder="e.g., 6"
                     required
-                    style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
                     disabled={isSubmittingTable}
                   />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
-                <button type="button" onClick={() => setTableModalOpen(false)} style={{ flex: 1, padding: '12px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer' }} disabled={isSubmittingTable}>Abort</button>
-                <button type="submit" disabled={isSubmittingTable || !tableNumberInput.trim() || !tableSeatsInput} style={{ flex: 1, padding: '12px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  {isSubmittingTable ? <Loader2 size={18} className="spinner" /> : 'Mount Structure'}
+                <button type="button" onClick={() => setTableModalOpen(false)} style={{ flex: 1, padding: '10px', background: 'transparent', color: '#1A1A1A', border: '1px solid #E5E7EB', borderRadius: '8px', fontWeight: 500, cursor: 'pointer' }} disabled={isSubmittingTable}>Cancel</button>
+                <button type="submit" disabled={isSubmittingTable || !tableNumberInput.trim() || !tableSeatsInput} style={{ flex: 1, padding: '10px', background: '#1A1A1A', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 500, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  {isSubmittingTable ? <Loader2 size={16} className="spinner" /> : 'Save Table'}
                 </button>
               </div>
             </form>
@@ -312,16 +320,5 @@ export default function FloorsPage() {
       )}
 
     </div>
-  );
-}
-
-// Inline custom icon matching Big Corp structural aesthetics
-function LayersIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-      <polyline points="2 12 12 17 22 12"></polyline>
-      <polyline points="2 17 12 22 22 17"></polyline>
-    </svg>
   );
 }
