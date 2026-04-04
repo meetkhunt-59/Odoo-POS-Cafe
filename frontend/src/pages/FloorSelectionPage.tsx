@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
-import POSLayout from '../layouts/POSLayout';
-import { ChevronRight, Coffee, Layers } from 'lucide-react';
+import { ChevronRight, Coffee, Layers, User } from 'lucide-react';
 import './FloorSelectionPage.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,21 +23,18 @@ export default function FloorSelectionPage() {
   }, [floors, selectedFloorId]);
 
   const floorTables = tables.filter(t => t.floor_id === selectedFloorId);
+  const selectedTable = tables.find(t => t.id === selectedTableId);
 
   const handleTableClick = (tableId: string) => {
     selectTable(tableId);
-    navigate('/pos'); // Go to Register after selection
+    // Removed auto-navigate
   };
 
   return (
-    <POSLayout>
-      <div className="floor-selection-container">
+    <div className="floor-layout-wrapper">
+      {/* LEFT PANE: 75% Tables */}
+      <div className="floor-main-content">
         <header className="floor-header">
-          <div className="header-info">
-            <h1>Table Service</h1>
-            <p>Select a table to start an order</p>
-          </div>
-          
           <div className="floor-tabs">
             {floors.map(floor => (
               <button 
@@ -77,18 +73,47 @@ export default function FloorSelectionPage() {
              ))
            )}
         </section>
+      </div>
 
-        <div className="floor-actions">
+      {/* RIGHT PANE: 25% Receipt-like summary */}
+      <div className="floor-receipt-panel">
+        <div className="receipt-header-info">
+          <h2>Order Summary</h2>
+          <div className="receipt-table-details">
+            {selectedTable ? (
+               <>
+                 <div className="detail-row">
+                   <div className="detail-label">Table</div>
+                   <div className="detail-value">{selectedTable.table_number}</div>
+                 </div>
+                 <div className="detail-row">
+                   <div className="detail-label">Seats</div>
+                   <div className="detail-value"><User size={14} className="inline-icon"/> {selectedTable.seats}</div>
+                 </div>
+                 <div className="detail-row">
+                   <div className="detail-label">Status</div>
+                   <div className="detail-value status-open">Available</div>
+                 </div>
+               </>
+            ) : (
+               <div className="no-table-selected">
+                 <p>Please select a table to begin.</p>
+               </div>
+            )}
+          </div>
+        </div>
+
+        <div className="floor-actions-receipt">
            <button 
              className="next-btn"
              disabled={!selectedTableId}
              onClick={() => navigate('/pos')}
            >
-             Continue to Register
+             Continue
              <ChevronRight size={20} />
            </button>
         </div>
       </div>
-    </POSLayout>
+    </div>
   );
 }

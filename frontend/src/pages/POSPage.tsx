@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import POSLayout from '../layouts/POSLayout';
-import TopBar from '../components/TopBar';
 import CategoryFilterRow from '../components/CategoryFilterRow';
 import ProductGrid from '../components/ProductGrid';
 import { useAuthStore } from '../store/authStore';
@@ -11,7 +10,6 @@ export default function POSPage() {
   const token = useAuthStore((s) => s.token)!;
   const { products = [], categories = [], session, fetchAll, addToCart, loading } = usePosStore();
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (token) fetchAll(token);
@@ -29,17 +27,12 @@ export default function POSPage() {
     })),
   ];
 
-  // Filter products by category and search
   let filteredProducts = products || [];
   if (selectedCategoryId !== 'all') {
     const catName = (categories || []).find((c) => c.id === selectedCategoryId)?.name;
     if (catName) {
       filteredProducts = filteredProducts.filter((p) => p.category === catName);
     }
-  }
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    filteredProducts = filteredProducts.filter((p) => (p.name || '').toLowerCase().includes(q));
   }
 
   const handleAddProduct = (product: Product) => {
@@ -58,8 +51,6 @@ export default function POSPage() {
 
   return (
     <POSLayout showOrderPanel={true}>
-      
-      <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <CategoryFilterRow
         categories={filterCategories}
         selectedId={selectedCategoryId}

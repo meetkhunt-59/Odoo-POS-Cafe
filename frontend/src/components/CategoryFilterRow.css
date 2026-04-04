@@ -1,9 +1,9 @@
 .category-scroll-container {
   width: 100%;
   overflow-x: auto;
-  padding: 8px 20px 24px;
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  padding: 16px 20px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .category-scroll-container::-webkit-scrollbar {
@@ -12,48 +12,49 @@
 
 .category-row {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   width: max-content;
 }
 
 .category-card {
-  width: 90px;
-  height: 100px;
   background: var(--bg-card);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
-  border: 2px solid transparent;
+  padding: 0 16px;
+  height: 44px;
+  gap: 12px;
+  border: 1px solid var(--border-light);
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .category-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  background: #f8fafc;
+  transform: translateY(-1px);
 }
 
 .category-card.active {
   background: var(--primary-light);
   border-color: var(--primary);
+  color: var(--primary);
 }
 
 .cat-icon {
-  font-size: 28px;
-  margin-bottom: 4px;
+  font-size: 20px;
 }
 
 .cat-name {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
+.category-card.active .cat-name {
+  color: var(--primary);
+}
+
 .cat-count {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-weight: 600;
+  display: none; /* Removed count as it adds clutter in horizontal view */
 }

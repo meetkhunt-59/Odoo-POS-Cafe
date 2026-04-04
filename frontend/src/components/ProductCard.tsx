@@ -1,5 +1,3 @@
-import React from 'react';
-import { Minus, Plus } from 'lucide-react';
 import type { Product } from '../api/types';
 import { usePosStore } from '../store/posStore';
 import './Product.css';
@@ -30,7 +28,6 @@ function getCategoryIcon(category: string): string {
 
 export default function ProductCard({ product, onAdd }: Props) {
   const cart = usePosStore((s) => s.cart);
-  const updateCartQuantity = usePosStore((s) => s.updateCartQuantity);
   const cartItem = cart.find((item) => item.product.id === product.id);
   const qty = cartItem?.quantity || 0;
 
@@ -38,41 +35,18 @@ export default function ProductCard({ product, onAdd }: Props) {
     onAdd(product);
   };
 
-  const handleIncrement = () => {
-    updateCartQuantity(product.id, qty + 1);
-  };
-
-  const handleDecrement = () => {
-    updateCartQuantity(product.id, qty - 1);
-  };
-
   return (
-    <div className={`product-card ${qty > 0 ? 'selected' : ''}`}>
+    <div className={`product-card ${qty > 0 ? 'selected' : ''}`} onClick={handleAdd}>
+      {qty > 0 && (
+        <div className="qty-badge">{qty}</div>
+      )}
       <div className="img-zone product-icon-zone">
         <span className="product-emoji">{getCategoryIcon(product.category)}</span>
       </div>
 
       <div className="info-zone">
         <h3 className="product-name">{product.name}</h3>
-
-        <div className="price-row">
-          <span className="price">₹{Number(product.price).toFixed(2)}</span>
-          <div className="diet-badge">
-            <span className="category-label">{product.category}</span>
-          </div>
-        </div>
-
-        {qty === 0 ? (
-          <button className="add-cta" onClick={handleAdd}>
-            Add to Dish
-          </button>
-        ) : (
-          <div className="qty-stepper">
-            <button className="icon-btn" onClick={handleDecrement}><Minus size={16} /></button>
-            <span className="qty-count">{qty}</span>
-            <button className="icon-btn" onClick={handleIncrement}><Plus size={16} /></button>
-          </div>
-        )}
+        <span className="price">₹{Number(product.price).toFixed(2)}</span>
       </div>
     </div>
   );

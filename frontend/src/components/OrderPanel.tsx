@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Edit2, Minus, Plus, Trash2 } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
@@ -13,7 +13,6 @@ export default function OrderPanel() {
   const profile = useAuthStore((s) => s.profile);
   const {
     cart,
-    updateCartQuantity,
     removeFromCart,
     clearCartOnly,
     selectedTableId,
@@ -70,7 +69,7 @@ export default function OrderPanel() {
 
       {/* Order Type Tabs */}
       <div className="order-type-tabs">
-        {['Dine In', 'Take Away', 'Delivery'].map(type => (
+        {['Dine In', 'Take Away'].map(type => (
           <button
             key={type}
             className={`tab-btn ${type === 'Dine In' ? 'active' : ''}`}
@@ -89,32 +88,17 @@ export default function OrderPanel() {
           </div>
         )}
         {cart.map((item) => (
-          <div key={item.product.id} className="cart-item">
-            <div className="item-thumbnail-emoji">
-              📦
-            </div>
-            <div className="item-details">
-              <span className="item-name">{item.product.name}</span>
-              <div className="item-price-row">
-                <span className="item-price">₹{Number(item.product.price).toFixed(2)}</span>
-                <div className="item-qty-controls">
-                  <button className="qty-btn" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}>
-                    <Minus size={14} />
-                  </button>
-                  <span className="item-qty">{item.quantity}</span>
-                  <button className="qty-btn" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}>
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="item-right">
-              <div className="item-total">
-                ₹{(Number(item.product.price) * item.quantity).toFixed(2)}
-              </div>
-              <button className="item-remove" onClick={() => removeFromCart(item.product.id)}>
+          <div key={item.product.id} className="cart-item-simplified">
+            <div className="item-left-side">
+              <button className="simplified-remove" onClick={() => removeFromCart(item.product.id)}>
                 <Trash2 size={14} />
               </button>
+              <span className="item-qty">{item.quantity} x</span>
+              <span className="item-name">{item.product.name}</span>
+            </div>
+            
+            <div className="item-right-side">
+              ₹{(Number(item.product.price) * item.quantity).toFixed(2)}
             </div>
           </div>
         ))}
@@ -131,14 +115,12 @@ export default function OrderPanel() {
           <span className="totals-value">₹{taxAmount.toFixed(2)}</span>
         </div>
         <div className="totals-row grand-total">
-          <span className="totals-label bold">Total Amount</span>
+          <span className="totals-label bold">Total</span>
           <span className="totals-value bold">₹{total.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Payment Method Row removed from sidebar - now in overlay */}
-
-      {/* Action Buttons: Split Flow */}
+      {/* Action Buttons: Side by Side */}
       <div className="cta-container dual-actions">
         <button
           className="send-kitchen-btn"
@@ -152,7 +134,7 @@ export default function OrderPanel() {
           onClick={() => navigate('/pos/payment')}
           disabled={cart.length === 0 || !session}
         >
-          {cart.length === 0 ? 'Select Items' : `Checkout — ₹${total.toFixed(2)}`}
+          {cart.length === 0 ? 'Payment' : `Pay ₹${total.toFixed(2)}`}
         </button>
       </div>
 
