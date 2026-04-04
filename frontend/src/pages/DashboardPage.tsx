@@ -80,38 +80,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Second Dummy Card to complete the Dashboard Look */}
-          <div className="pos-register-card inactive">
-             <div className="card-top-accent inactive-accent"></div>
-            <div className="card-header">
-              <h2 className="register-name">Patio Bar</h2>
-              <button className="register-options"><MoreVertical size={20} /></button>
-            </div>
-            
-            <div className="card-content">
-              <div className="status-row">
-                <div className="status-indicator"></div>
-                <span className="status-text">Closed</span>
-              </div>
-              
-              <div className="register-stats">
-                <div className="stat-line">
-                  <span className="stat-label">Last closing cash</span>
-                  <span className="stat-value">$ 450.00</span>
-                </div>
-                <div className="stat-line">
-                  <span className="stat-label">Last closing date</span>
-                  <span className="stat-value">Yesterday, 11:00 PM</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="card-footer">
-               <button className="btn-open-session secondary">
-                New Session
-              </button>
-            </div>
-          </div>
+
 
         </div>
       </main>
