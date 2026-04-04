@@ -23,7 +23,7 @@ export default function FloorSelectionPage() {
     }
   }, [floors, selectedFloorId]);
 
-  const floorTables = tables.filter(t => t.floor_id === selectedFloorId);
+  const floorTables = tables.filter(t => t.floor_id === selectedFloorId && !t.appointment_resource);
   const selectedTable = tables.find(t => t.id === selectedTableId);
 
   const handleTableClick = (tableId: string) => {
@@ -69,9 +69,8 @@ export default function FloorSelectionPage() {
                  <div className="table-number">{table.table_number}</div>
                  <div className="table-meta">
                    <span>{table.seats} Seats</span>
-                   {table.appointment_resource && <span className="reserved-tag">Reserved</span>}
                  </div>
-                 {selectedTableId === table.id && <div className="active-indicator">Current</div>}
+                 {selectedTableId === table.id && <div className="active-indicator" style={{ background: '#000000', color: '#ffffff' }}>Current</div>}
                </button>
              ))
            )}
@@ -96,7 +95,7 @@ export default function FloorSelectionPage() {
                  </div>
                  <div className="detail-row">
                    <div className="detail-label">Status</div>
-                   <div className="detail-value status-open">Available</div>
+                   <div className="detail-value" style={{ fontWeight: 600, color: '#000000' }}>Available</div>
                  </div>
                </>
             ) : (

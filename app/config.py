@@ -24,5 +24,8 @@ class Settings(BaseSettings):
     # For local dev/testing only: create tables from SQLAlchemy models.
     auto_create_schema: bool = Field(default=False, validation_alias="AUTO_CREATE_SCHEMA")
 
+    # Razorpay Configuration
+    razorpay_key_id: str | None = Field(default=None, validation_alias="RAZORPAY_KEY_ID")
+    razorpay_key_secret: str | None = Field(default=None, validation_alias="RAZORPAY_KEY_SECRET")
 
 settings = Settings()

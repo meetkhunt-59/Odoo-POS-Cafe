@@ -19,10 +19,16 @@ export default function OrderPanel() {
     session,
     tables,
     selectedCustomer,
-    setSelectedCustomer
+    setSelectedCustomer,
+    discountPercent,
+    setDiscountPercent,
+    orderNote,
+    setOrderNote,
+    orderType,
+    setOrderType,
+    markTableBusy
   } = usePosStore();
 
-  const [orderType, setOrderType] = useState<'Dine In' | 'Take Away'>('Dine In');
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
@@ -31,7 +37,9 @@ export default function OrderPanel() {
     ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length
     : 0;
   const taxAmount = subTotal * (taxRate / 100);
-  const total = subTotal + taxAmount;
+  const baseTotal = subTotal + taxAmount;
+  const discountAmount = baseTotal * (discountPercent / 100);
+  const total = baseTotal - discountAmount;
 
   const selectedTable = tables.find((t) => t.id === selectedTableId);
 
@@ -59,6 +67,8 @@ export default function OrderPanel() {
         session_id: currentSession.id,
         table_id: orderType === 'Take Away' ? null : selectedTableId,
         customer_id: selectedCustomer?.id || null,
+        notes: orderNote || undefined,
+        discount_percentage: discountPercent || undefined,
         items: cart.map((item) => ({
           product_id: item.product.id,
           variant_id: item.variant?.id, // Support variants
@@ -67,6 +77,9 @@ export default function OrderPanel() {
       });
       
       usePosStore.getState().setActiveOrder({ id: order.id, number: order.order_number, total: Number(order.total_amount) });
+      if (selectedTableId && orderType !== 'Take Away') {
+        markTableBusy(selectedTableId, true);
+      }
       alert(`Order #${order.order_number} sent to kitchen!`);
     } catch (err: any) {
       alert(`Failed to send order: ${err.message}`);
@@ -84,9 +97,6 @@ export default function OrderPanel() {
           </h2>
           <span className="waiter-name">{profile?.name || 'Staff'}</span>
         </div>
-        <button className="edit-btn">
-          <Edit2 size={16} />
-        </button>
       </div>
 
       {/* Order Type Tabs */}
@@ -149,6 +159,28 @@ export default function OrderPanel() {
         ))}
       </div>
 
+      {/* Custom Inputs */}
+      <div style={{ padding: '0 16px 8px', display: 'flex', gap: '8px', flexDirection: 'column' }}>
+        <input 
+          type="text" 
+          placeholder="Add order note..." 
+          value={orderNote}
+          onChange={e => setOrderNote(e.target.value)}
+          style={{ width: '100%', padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '13px', color: '#6B7280', whiteSpace: 'nowrap' }}>Discount %</span>
+          <input 
+            type="number" 
+            min="0" max="100" 
+            placeholder="0" 
+            value={discountPercent || ''}
+            onChange={e => setDiscountPercent(Number(e.target.value))}
+            style={{ width: '60px', padding: '6px 8px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px' }}
+          />
+        </div>
+      </div>
+
       {/* Totals Section */}
       <div className="totals-section">
         <div className="totals-row">
@@ -159,6 +191,12 @@ export default function OrderPanel() {
           <span className="totals-label">Tax {taxRate.toFixed(0)}%</span>
           <span className="totals-value">₹{taxAmount.toFixed(2)}</span>
         </div>
+        {discountPercent > 0 && (
+          <div className="totals-row" style={{ color: '#10B981' }}>
+            <span className="totals-label">Discount ({discountPercent}%)</span>
+            <span className="totals-value">-₹{discountAmount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="totals-row grand-total">
           <span className="totals-label bold">Total</span>
           <span className="totals-value bold">₹{total.toFixed(2)}</span>

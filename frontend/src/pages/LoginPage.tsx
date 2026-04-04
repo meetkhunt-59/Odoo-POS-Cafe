@@ -21,7 +21,7 @@ export default function LoginPage() {
         setIsSignup(false);
       } else {
         await login(email, password);
-        navigate('/pos');
+        navigate('/');
       }
     } catch {
       // error is already set in store

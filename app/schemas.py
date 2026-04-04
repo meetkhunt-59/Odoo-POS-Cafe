@@ -202,6 +202,8 @@ class OrderCreateRequest(BaseModel):
     session_id: UUID
     table_id: UUID | None = None
     customer_id: UUID | None = None
+    notes: str | None = None
+    discount_percentage: Decimal | None = Field(default=Decimal("0"), ge=0, le=100)
     items: list[OrderItemInput]
 
 
@@ -223,6 +225,8 @@ class OrderResponse(BaseModel):
     kitchen_status: str
     payment_status: str
     total_amount: Decimal
+    notes: str | None = None
+    discount_percentage: Decimal | None = None
     items: list[OrderItemResponse]
 
 
@@ -282,12 +286,20 @@ class CustomerCreate(BaseModel):
     name: str
     phone: str | None = None
     email: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
 
 class CustomerResponse(BaseModel):
     id: UUID
     name: str
     phone: str | None = None
     email: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
     total_sales: Decimal
     created_at: datetime
 

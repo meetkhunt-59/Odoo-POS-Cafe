@@ -359,6 +359,11 @@ def create_table(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
+    # Check uniqueness
+    existing = db.table("tables").select("id").eq("table_number", payload.table_number).execute()
+    if existing.data:
+        raise HTTPException(400, "A table with this number already exists.")
+
     data = {
         "floor_id": str(payload.floor_id),
         "table_number": payload.table_number,
@@ -380,6 +385,12 @@ def update_table(
     current: dict = Depends(get_current_user),
 ):
     update_data = payload.model_dump(exclude_unset=True, mode='json')
+    
+    if "table_number" in update_data:
+        existing = db.table("tables").select("id").eq("table_number", update_data["table_number"]).neq("id", table_id).execute()
+        if existing.data:
+            raise HTTPException(400, "A table with this number already exists.")
+
     res = db.table("tables").update(update_data).eq("id", table_id).execute()
     if not res.data:
         raise HTTPException(404, "Table not found.")

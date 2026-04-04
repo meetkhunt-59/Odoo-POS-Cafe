@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
-import { Loader2, Filter } from 'lucide-react';
+import { Loader2, Filter, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './KitchenPage.css';
 
 interface KitchenOrderItem {
@@ -24,10 +25,12 @@ export default function KitchenPage() {
   const token = useAuthStore((s) => s.token)!;
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   const [activeTab, setActiveTab] = useState<'to_cook' | 'preparing' | 'completed'>('to_cook');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchOrders = async () => {
     try {
@@ -112,6 +115,12 @@ export default function KitchenPage() {
       {/* Top Navbar mimicking POS Nav but with Kitchen Stages */}
       <div className="terminal-nav kitchen-specific-nav">
         <div className="nav-group-main">
+          <button className="nav-btn nav-back-master" onClick={() => navigate(-1)} title="Go Back">
+            <ArrowLeft size={18} />
+          </button>
+          
+          <div className="nav-divider"></div>
+
           <button 
             className={`nav-btn ${activeTab === 'to_cook' ? 'active' : ''}`}
             onClick={() => setActiveTab('to_cook')}
@@ -158,10 +167,10 @@ export default function KitchenPage() {
           <div className="sidebar-header">
             <Filter size={18} />
             <h3>Filters</h3>
-            {(selectedProduct || selectedCategory) && (
+            {(selectedProduct || selectedCategory || searchQuery) && (
               <button 
                 className="clear-filters-btn"
-                onClick={() => { setSelectedProduct(null); setSelectedCategory(null); }}
+                onClick={() => { setSelectedProduct(null); setSelectedCategory(null); setSearchQuery(''); }}
               >
                 Clear
               </button>
@@ -169,6 +178,16 @@ export default function KitchenPage() {
           </div>
 
           <div className="filter-scroll-container">
+            <div style={{ padding: '0 16px 16px' }}>
+              <input 
+                type="text" 
+                placeholder="Search items..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: '6px', fontSize: '13px', outline: 'none' }}
+              />
+            </div>
+
             <div className="filter-section">
               <h4>Categories</h4>
               <div className="filter-list">
@@ -227,6 +246,12 @@ export default function KitchenPage() {
                 }
                 if (selectedProduct) {
                   displayItems = displayItems.filter(i => i.product_name === selectedProduct);
+                }
+                if (searchQuery.trim()) {
+                  const matchesTicketStr = order.order_number.toString().includes(searchQuery.trim());
+                  if (!matchesTicketStr) {
+                    displayItems = displayItems.filter(i => i.product_name.toLowerCase().includes(searchQuery.toLowerCase()));
+                  }
                 }
 
                 // Hide order entirely if it has no items matching the filter

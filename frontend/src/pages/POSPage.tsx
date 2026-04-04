@@ -12,6 +12,7 @@ export default function POSPage() {
   const token = useAuthStore((s) => s.token)!;
   const { products = [], categories = [], session, fetchAll, addToCart, loading } = usePosStore();
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (token) fetchAll(token);
@@ -37,6 +38,10 @@ export default function POSPage() {
     }
   }
 
+  if (searchQuery.trim()) {
+    filteredProducts = filteredProducts.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }
+
   const handleAddProduct = (product: Product) => {
     addToCart(product);
   };
@@ -56,6 +61,15 @@ export default function POSPage() {
       {/* LEFT PANE: 75% Products (reuses floor wrapper) */}
       <div className="floor-main-content" style={{ padding: 0 }}>
         <TerminalTopNav />
+        <div style={{ padding: '16px 24px 0 24px' }}>
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '12px 16px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '15px', outline: 'none' }}
+          />
+        </div>
         <CategoryFilterRow
           categories={filterCategories}
           selectedId={selectedCategoryId}

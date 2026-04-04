@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, ProductCategory, Floor, Table, PaymentMethod, SessionSummary, CartItem, Customer } from '../api/types';
+import type { Product, ProductCategory, Floor, Table, PaymentMethod, SessionSummary, CartItem, Customer, PointOfSale } from '../api/types';
 import * as api from '../api/client';
 
 interface PosState {
@@ -10,6 +10,7 @@ interface PosState {
   floors: Floor[];
   tables: Table[];
   paymentMethods: PaymentMethod[];
+  pointOfSales: PointOfSale[];
   session: SessionSummary | null;
 
   // Cart
@@ -17,6 +18,9 @@ interface PosState {
   selectedTableId: string | null;
   selectedCustomer: Customer | null;
   selectedPaymentMethodId: string | null;
+  discountPercent: number;
+  orderNote: string;
+  orderType: 'Dine In' | 'Take Away';
 
   // Loading
   loading: boolean;
@@ -32,6 +36,7 @@ interface PosState {
   fetchFloors: (token: string) => Promise<void>;
   fetchTables: (token: string) => Promise<void>;
   fetchPaymentMethods: (token: string) => Promise<void>;
+  fetchPointOfSales: (token: string) => Promise<void>;
 
   // Actions — session
   openSession: (token: string) => Promise<void>;
@@ -46,6 +51,10 @@ interface PosState {
   selectTable: (tableId: string | null) => void;
   setSelectedCustomer: (customer: Customer | null) => void;
   selectPaymentMethod: (pmId: string | null) => void;
+  setDiscountPercent: (percent: number) => void;
+  setOrderNote: (note: string) => void;
+  setOrderType: (type: 'Dine In' | 'Take Away') => void;
+  markTableBusy: (tableId: string | null, isBusy: boolean) => void;
   resetForNewCustomer: () => void;
   clearCartOnly: () => void;
   setActiveOrder: (order: { id: string; number: number; total: number } | null) => void;
@@ -60,11 +69,15 @@ export const usePosStore = create<PosState>()(
       floors: [],
       tables: [],
       paymentMethods: [],
+      pointOfSales: [],
       session: null,
       cart: [],
       selectedTableId: null,
       selectedCustomer: null,
       selectedPaymentMethodId: null,
+      discountPercent: 0,
+      orderNote: '',
+      orderType: 'Dine In',
       loading: false,
       activeOrder: null,
       paymentSuccessOrderNumber: null,
@@ -72,14 +85,15 @@ export const usePosStore = create<PosState>()(
       fetchAll: async (token) => {
         set({ loading: true });
         try {
-          const [products, categories, floors, tables, paymentMethods] = await Promise.all([
+          const [products, categories, floors, tables, paymentMethods, pointOfSales] = await Promise.all([
             api.listProducts(token),
             api.listCategories(token),
             api.listFloors(token),
             api.listTables(token),
             api.listPaymentMethods(token),
+            api.listPointOfSales(token)
           ]);
-          set({ products, categories, floors, tables, paymentMethods, loading: false });
+          set({ products, categories, floors, tables, paymentMethods, pointOfSales, loading: false });
         } catch {
           set({ loading: false });
         }
@@ -108,6 +122,11 @@ export const usePosStore = create<PosState>()(
       fetchPaymentMethods: async (token) => {
         const paymentMethods = await api.listPaymentMethods(token);
         set({ paymentMethods });
+      },
+
+      fetchPointOfSales: async (token) => {
+        const pointOfSales = await api.listPointOfSales(token);
+        set({ pointOfSales });
       },
 
       openSession: async (token) => {
@@ -155,8 +174,34 @@ export const usePosStore = create<PosState>()(
       selectTable: (tableId) => set({ selectedTableId: tableId }),
       setSelectedCustomer: (customer) => set({ selectedCustomer: customer }),
       selectPaymentMethod: (pmId) => set({ selectedPaymentMethodId: pmId }),
-      resetForNewCustomer: () => set({ cart: [], selectedTableId: null, selectedCustomer: null, selectedPaymentMethodId: null, activeOrder: null, paymentSuccessOrderNumber: null }),
-      clearCartOnly: () => set({ cart: [] }),
+      setDiscountPercent: (percent) => set({ discountPercent: percent }),
+      setOrderNote: (note) => set({ orderNote: note }),
+      setOrderType: (type) => set({ orderType: type }),
+
+      markTableBusy: (tableId, isBusy) => set(state => {
+        if (!tableId) return state;
+        return {
+          tables: state.tables.map(t => t.id === tableId ? { ...t, appointment_resource: isBusy } : t)
+        };
+      }),
+
+      resetForNewCustomer: () => set({ 
+        cart: [], 
+        selectedTableId: null, 
+        selectedCustomer: null, 
+        selectedPaymentMethodId: null,
+        discountPercent: 0,
+        orderNote: '',
+        orderType: 'Dine In',
+        activeOrder: null,
+        paymentSuccessOrderNumber: null
+      }),
+      
+      clearCartOnly: () => set({ 
+        cart: [],
+        discountPercent: 0,
+        orderNote: '',
+      }),
       setActiveOrder: (order) => set({ activeOrder: order }),
       setPaymentSuccess: (num) => set({ paymentSuccessOrderNumber: num }),
     }),

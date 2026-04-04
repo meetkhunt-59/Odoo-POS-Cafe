@@ -78,6 +78,19 @@ export async function createPointOfSale(
   return handleResponse<PointOfSale>(res);
 }
 
+export async function updatePointOfSale(
+  token: string,
+  id: string,
+  payload: { name?: string; cash_enabled?: boolean; upi_enabled?: boolean; card_enabled?: boolean }
+): Promise<PointOfSale> {
+  const res = await fetch(`${API_BASE}/backend/pos/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<PointOfSale>(res);
+}
+
 // ── Product Categories ───────────────────────────────────────
 
 export async function listCategories(token: string): Promise<ProductCategory[]> {
@@ -268,7 +281,7 @@ export async function openSession(token: string): Promise<SessionSummary> {
 
 export async function createOrder(
   token: string,
-  payload: { session_id: string; table_id?: string | null; customer_id?: string | null; items: OrderItemInput[] }
+  payload: { session_id: string; table_id?: string | null; customer_id?: string | null; notes?: string; discount_percentage?: number; items: OrderItemInput[] }
 ): Promise<Order> {
   const res = await fetch(`${API_BASE}/terminal/orders`, {
     method: 'POST',
@@ -278,6 +291,17 @@ export async function createOrder(
   return handleResponse<Order>(res);
 }
 
+export async function createRazorpayOrder(
+  token: string,
+  orderId: string
+): Promise<{ razorpay_order_id: string; amount: number; currency: string; key_id: string }> {
+  const res = await fetch(`${API_BASE}/terminal/orders/${orderId}/razorpay`, {
+    method: 'POST',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' }
+  });
+  return handleResponse(res);
+}
+
 export async function payOrder(token: string, orderId: string, paymentMethodId: string): Promise<Order> {
   const res = await fetch(`${API_BASE}/terminal/orders/${orderId}/pay`, {
     method: 'POST',
@@ -285,6 +309,14 @@ export async function payOrder(token: string, orderId: string, paymentMethodId: 
     body: JSON.stringify({ payment_method_id: paymentMethodId }),
   });
   return handleResponse<Order>(res);
+}
+
+export async function deleteOrder(token: string, orderId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/terminal/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: authHeaders(token),
+  });
+  if (!res.ok) throw new Error(await res.text());
 }
 
 // ── Transactions ─────────────────────────────────────────────
@@ -321,4 +353,25 @@ export async function createCustomer(token: string, data: { name: string; phone?
 export async function getKitchenOrders(token: string): Promise<Order[]> {
   const res = await fetch(`${API_BASE}/terminal/display/kitchen`, { headers: authHeaders(token) });
   return handleResponse<Order[]>(res);
+}
+
+// ── Public Self-Ordering ─────────────────────────────────────
+
+export async function getPublicProducts(): Promise<Product[]> {
+  const res = await fetch(`${API_BASE}/public/products`);
+  return handleResponse<Product[]>(res);
+}
+
+export async function getPublicCategories(): Promise<ProductCategory[]> {
+  const res = await fetch(`${API_BASE}/public/categories`);
+  return handleResponse<ProductCategory[]>(res);
+}
+
+export async function createPublicOrder(token: string, payload: any): Promise<Order> {
+  const res = await fetch(`${API_BASE}/public/orders?token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<Order>(res);
 }

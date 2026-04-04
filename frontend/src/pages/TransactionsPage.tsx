@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import DashboardNavbar from '../components/DashboardNavbar';
-import { getTransactions } from '../api/client';
+import { getTransactions, deleteOrder } from '../api/client';
 import type { TransactionSummary } from '../api/types';
 import { useAuthStore } from '../store/authStore';
-import { Receipt, Calendar, CreditCard, Loader2 } from 'lucide-react';
+import { Receipt, Calendar, CreditCard, Loader2, Trash2 } from 'lucide-react';
 import './TransactionsPage.css';
 
 export default function TransactionsPage() {
@@ -41,6 +41,20 @@ export default function TransactionsPage() {
     fetchData(newOffset);
   };
 
+  const handleDelete = async (orderId: string) => {
+    if (!token) return;
+    if (!window.confirm("Are you sure you want to delete this order? This cannot be undone.")) return;
+    
+    try {
+      await deleteOrder(token, orderId);
+      // Optimistic update
+      setTransactions(prev => prev.filter(t => t.id !== orderId));
+    } catch (err) {
+      console.error("Failed to delete order:", err);
+      alert("Failed to delete order.");
+    }
+  };
+
   return (
     <div className="pos-dashboard-root transactions-page">
       <DashboardNavbar />
@@ -59,6 +73,7 @@ export default function TransactionsPage() {
                   <th>Amount</th>
                   <th>Payment</th>
                   <th>Kitchen Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -83,6 +98,16 @@ export default function TransactionsPage() {
                         <span className={`badge-status status-${t.kitchen_status || 'unknown'}`}>
                           {(t.kitchen_status || 'unknown').replace('_', ' ')}
                         </span>
+                    </td>
+                    <td>
+                        <button 
+                          className="btn-icon" 
+                          onClick={() => handleDelete(t.id)} 
+                          style={{ color: 'var(--danger-color)', border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px' }}
+                          title="Delete Order"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                     </td>
                   </tr>
                 ))}

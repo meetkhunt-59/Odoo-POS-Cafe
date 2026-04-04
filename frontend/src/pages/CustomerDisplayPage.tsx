@@ -2,9 +2,15 @@ import { usePosStore } from '../store/posStore';
 import './CustomerDisplayPage.css';
 
 export default function CustomerDisplayPage() {
-  const { cart, selectedTableId, tables, paymentSuccessOrderNumber } = usePosStore();
+  const { cart, selectedTableId, tables, paymentSuccessOrderNumber, discountPercent } = usePosStore();
   
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
+  const taxRate = cart.length > 0 ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length : 0;
+  const taxAmount = subTotal * (taxRate / 100);
+  const baseTotal = subTotal + taxAmount;
+  const discountAmount = baseTotal * (discountPercent / 100);
+  const total = baseTotal - discountAmount;
+
   const selectedTable = tables.find(t => t.id === selectedTableId);
 
   return (
@@ -32,8 +38,7 @@ export default function CustomerDisplayPage() {
                 <div className="cart-list">
                   {cart.map(item => (
                     <div key={item.product.id} className="cart-row">
-                       <span className="qty">{item.quantity}x</span>
-                       <span className="name">{item.product.name}</span>
+                       <span className="item-name-qty">{item.quantity} x {item.product.name}</span>
                        <span className="price">₹{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
@@ -43,12 +48,22 @@ export default function CustomerDisplayPage() {
 
            <div className="cfd-summary">
               <div className="summary-row">
-                 <span>Subtotal</span>
+                 <span>Sub Total</span>
                  <span>₹{subTotal.toFixed(2)}</span>
               </div>
+              <div className="summary-row">
+                 <span>Tax ({taxRate.toFixed(0)}%)</span>
+                 <span>₹{taxAmount.toFixed(2)}</span>
+              </div>
+              {discountPercent > 0 && (
+                <div className="summary-row discount">
+                   <span>Discount ({discountPercent}%)</span>
+                   <span>-₹{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="summary-row total">
-                 <span>Total Amount</span>
-                 <span>₹{subTotal.toFixed(2)}</span>
+                 <span>Total</span>
+                 <span>₹{total.toFixed(2)}</span>
               </div>
               <div className="promo-message">Enjoy your meal!</div>
            </div>
@@ -57,6 +72,10 @@ export default function CustomerDisplayPage() {
       
       <div className="cfd-footer-scroll">
          <span>Special Offer: Get 10% off on your next visit! • Fresh Ingredients Daily • contactless Payment Available</span>
+      </div>
+
+      <div style={{ position: 'absolute', bottom: '80px', left: '40px', fontSize: '15px', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+         Powered by <span style={{ color: '#714B67', fontWeight: 900, fontSize: '18px', letterSpacing: '-0.02em' }}>odoo</span>
       </div>
     </div>
   );

@@ -112,6 +112,10 @@ CREATE TABLE IF NOT EXISTS public.customers (
   name TEXT NOT NULL,
   phone TEXT,
   email TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  country TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -12,7 +12,7 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const token = useAuthStore(s => s.token)!;
   const { products, categories, fetchProducts, fetchCategories } = usePosStore();
-  
+
   const [search, setSearch] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,15 +34,15 @@ export default function ProductsPage() {
     }
   };
 
-  const filtered = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="pos-dashboard-root transactions-page">
       <DashboardNavbar />
-      
+
       <main className="pos-dashboard-main">
         <div className="transactions-header customers-header-flex">
           <h1 className="header-title">Product Catalog</h1>
@@ -59,9 +59,9 @@ export default function ProductsPage() {
         <div className="transactions-card slide-down">
           <div className="search-bar-container">
             <Search className="search-icon" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search products or categories..." 
+            <input
+              type="text"
+              placeholder="Search products or categories..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="customer-search-input"
@@ -89,7 +89,7 @@ export default function ProductsPage() {
                     <tr key={p.id}>
                       <td>
                         <div className="cell-order" style={{ fontWeight: 600, color: '#111827' }}>
-                          <Package size={16} style={{ color: '#6B7280' }}/> {p.name} {p.unit ? `(${p.unit})` : ''}
+                          <Package size={16} style={{ color: '#6B7280' }} /> {p.name} {p.unit ? `(${p.unit})` : ''}
                         </div>
                         {p.variants.length > 0 && (
                           <div style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
@@ -98,7 +98,7 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td>
-                        <span style={{ 
+                        <span style={{
                           padding: '4px 8px', borderRadius: '4px', background: '#eef2ff', color: '#4f46e5', fontSize: '13px', fontWeight: 500
                         }}>
                           {p.category}
@@ -133,12 +133,12 @@ export default function ProductsPage() {
           <div className="customer-modal slide-down" style={{ maxWidth: '400px' }}>
             <div className="modal-header">
               <h2>Product Categories</h2>
-              <button className="btn-close" onClick={() => setShowCategoryModal(false)}><X size={20}/></button>
+              <button className="btn-close" onClick={() => setShowCategoryModal(false)}><X size={20} /></button>
             </div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {categories.map((c) => (
                 <div key={c.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <input 
+                  <input
                     style={{ flex: 1, padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '6px' }}
                     defaultValue={c.name}
                     onBlur={async (e) => {
@@ -146,7 +146,7 @@ export default function ProductsPage() {
                         try {
                           await api.updateCategory(token, c.id, { name: e.target.value });
                           fetchCategories(token);
-                        } catch(err) { console.error(err); }
+                        } catch (err) { console.error(err); }
                       }
                     }}
                   />
@@ -154,7 +154,7 @@ export default function ProductsPage() {
                 </div>
               ))}
               <div style={{ borderTop: '1px solid #E5E7EB', margin: '8px 0' }}></div>
-              <button 
+              <button
                 className="btn-submit"
                 onClick={async () => {
                   const name = prompt('New Category Name:');

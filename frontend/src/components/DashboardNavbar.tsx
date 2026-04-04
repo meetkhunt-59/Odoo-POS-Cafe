@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ShoppingBag, Box, BarChart2, ArrowLeft } from 'lucide-react';
+import { ChevronDown, ShoppingBag, Box, BarChart2, ArrowLeft, User, LogOut } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 import './DashboardNavbar.css';
 
 export default function DashboardNavbar() {
@@ -21,6 +22,14 @@ export default function DashboardNavbar() {
 
   const toggleDropdown = (menu: string) => {
     setActiveDropdown(activeDropdown === menu ? null : menu);
+  };
+
+  const currentProfile = useAuthStore(s => s.profile);
+  const logout = useAuthStore(s => s.logout);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   const handleNavigate = (path: string) => {
@@ -125,6 +134,30 @@ export default function DashboardNavbar() {
           )}
         </div>
 
+      </div>
+
+      <div className="nav-group-actions" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <button 
+          className="nav-btn profile-btn"
+          onClick={() => handleNavigate('/settings/profile')}
+          title="Profile Settings"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <User size={18} />
+          <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>{currentProfile?.name || 'Profile'}</span>
+        </button>
+
+        <div className="nav-divider" style={{ margin: '0 4px' }}></div>
+
+        <button 
+          className="nav-btn logout-btn"
+          onClick={handleLogout}
+          title="Log out"
+          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--danger-color)', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <LogOut size={18} />
+          <span style={{ fontWeight: 500, fontSize: '0.9rem' }}>Logout</span>
+        </button>
       </div>
     </nav>
   );

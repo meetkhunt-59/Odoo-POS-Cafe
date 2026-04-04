@@ -1,4 +1,4 @@
-import { Coffee, Monitor, ShoppingCart, ListOrdered } from 'lucide-react';
+import { Coffee, Monitor, ShoppingCart, ListOrdered, ArrowLeft } from 'lucide-react';
 import { usePosStore } from '../store/posStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './TerminalTopNav.css';
@@ -16,6 +16,12 @@ export default function TerminalTopNav() {
   return (
     <div className="terminal-nav">
       <div className="nav-group-main">
+        <button className="nav-btn nav-back-master" onClick={() => navigate(-1)} title="Go Back">
+          <ArrowLeft size={18} />
+        </button>
+
+        <div className="nav-divider"></div>
+
         <button 
           className={`nav-btn ${isFloorView ? 'active' : ''}`}
           onClick={() => navigate('/pos/tables')}

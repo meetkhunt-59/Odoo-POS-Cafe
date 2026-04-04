@@ -8,6 +8,8 @@ from app.schemas import (
 )
 from decimal import Decimal
 from collections import defaultdict
+import razorpay
+from app.config import settings
 
 router = APIRouter(prefix="/terminal", tags=["terminal"])
 
@@ -32,6 +34,8 @@ def create_order(
         "session_id": str(payload.session_id),
         "table_id": str(payload.table_id) if payload.table_id else None,
         "customer_id": str(payload.customer_id) if payload.customer_id else None,
+        "notes": payload.notes,
+        "discount_percentage": float(payload.discount_percentage) if payload.discount_percentage is not None else 0.0,
     }
     order_res = db.table("orders").insert(order_data).execute()
     if not order_res.data:
@@ -67,9 +71,17 @@ def create_order(
              raise HTTPException(500, "Failed to bulk insert order items.")
         order_items = items_res.data
     
+    # Apply discount
+    discount_pct = Decimal(str(payload.discount_percentage)) if payload.discount_percentage else Decimal("0")
+    total = total * (Decimal("1") - (discount_pct / Decimal("100")))
+    
     upd = db.table("orders").update({"total_amount": float(total)}).eq("id", order["id"]).execute()
     if not upd.data:
         raise HTTPException(500, "Failed to execute final order total calculation update.")
+        
+    # Auto mark table as busy
+    if payload.table_id:
+        db.table("tables").update({"appointment_resource": True}).eq("id", str(payload.table_id)).execute()
         
     final_order = upd.data[0]
     final_order["items"] = order_items
@@ -89,8 +101,55 @@ def pay_order(
     if not upd.data:
         raise HTTPException(status_code=404, detail="Order not found or update returned no data.")
     final_order = upd.data[0]
+    
+    # Auto mark table as busy after payment
+    if final_order.get("table_id"):
+        db.table("tables").update({"appointment_resource": True}).eq("id", str(final_order["table_id"])).execute()
+        
     final_order["items"] = []
     return final_order
+
+@router.delete("/orders/{order_id}", status_code=204)
+def delete_order(
+    order_id: str,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("orders").delete().eq("id", order_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Order not found.")
+
+@router.post("/orders/{order_id}/razorpay")
+def create_razorpay_order(
+    order_id: str,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    if not settings.razorpay_key_id or not settings.razorpay_key_secret:
+        raise HTTPException(500, "Razorpay credentials not configured.")
+        
+    res = db.table("orders").select("total_amount").eq("id", order_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Order not found.")
+        
+    total_amount = float(res.data[0]["total_amount"])
+    amount_paise = int(total_amount * 100)
+    
+    try:
+        client = razorpay.Client(auth=(settings.razorpay_key_id, settings.razorpay_key_secret))
+        rzp_order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": order_id
+        })
+        return {
+            "razorpay_order_id": rzp_order["id"],
+            "amount": amount_paise,
+            "currency": "INR",
+            "key_id": settings.razorpay_key_id
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Failed to create Razorpay order: {str(e)}")
 
 @router.get("/transactions", response_model=list[TransactionSummary])
 def get_transactions(
@@ -174,6 +233,10 @@ def get_customers(
             name=c["name"],
             phone=c.get("phone"),
             email=c.get("email"),
+            address=c.get("address"),
+            city=c.get("city"),
+            state=c.get("state"),
+            country=c.get("country"),
             total_sales=total_sales,
             created_at=c["created_at"]
         ))
@@ -185,7 +248,15 @@ def create_customer(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    data = {"name": payload.name, "phone": payload.phone, "email": payload.email}
+    data = {
+        "name": payload.name, 
+        "phone": payload.phone, 
+        "email": payload.email,
+        "address": payload.address,
+        "city": payload.city,
+        "state": payload.state,
+        "country": payload.country
+    }
     res = db.table("customers").insert(data).execute()
     if not res.data:
         raise HTTPException(500, "Failed to create customer")
@@ -196,6 +267,10 @@ def create_customer(
         name=c["name"],
         phone=c.get("phone"),
         email=c.get("email"),
+        address=c.get("address"),
+        city=c.get("city"),
+        state=c.get("state"),
+        country=c.get("country"),
         total_sales=Decimal("0.0"),
         created_at=c["created_at"]
     )
