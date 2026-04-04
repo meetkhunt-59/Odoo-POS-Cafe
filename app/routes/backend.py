@@ -51,7 +51,7 @@ def update_category(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
     res = db.table("product_categories").update(update_data).eq("id", cat_id).execute()
     if not res.data:
         raise HTTPException(404, "Category not found.")
@@ -111,6 +111,7 @@ def create_product(
         cat_id = new_cat.data[0]["id"]
         cat_name = new_cat.data[0]["name"]
 
+    # 2. Bulk Insert Product and Variants
     prod_data = {
         "category_id": cat_id,
         "name": payload.name,
@@ -123,33 +124,41 @@ def create_product(
     prod_res = db.table("products").insert(prod_data).execute()
     if not prod_res.data:
         raise HTTPException(500, "Failed to create product.")
+    new_prod_id = prod_res.data[0]["id"]
 
-    prod = prod_res.data[0]
+    if payload.variants:
+        variants_data = [
+            {
+                "product_id": new_prod_id,
+                "attribute": v.attribute,
+                "value": v.value,
+                "extra_price": float(v.extra_price)
+            }
+            for v in payload.variants
+        ]
+        db.table("product_variants").insert(variants_data).execute()
 
-    # Insert variants if provided
-    variants: list[ProductVariantResponse] = []
-    for v in payload.variants:
-        v_data = {
-            "product_id": prod["id"],
-            "attribute": v.attribute,
-            "value": v.value,
-            "extra_price": float(v.extra_price),
-        }
-        v_res = db.table("product_variants").insert(v_data).execute()
-        if v_res.data:
-            variants.append(ProductVariantResponse(**v_res.data[0]))
-
+    # 3. Consolidated Refresh with Single Join
+    full_prod = db.table("products")\
+        .select("*, product_variants(*), category:product_categories(name)")\
+        .eq("id", new_prod_id)\
+        .single().execute()
+    
+    if not full_prod.data:
+        raise HTTPException(500, "Failed to retrieve fresh product data.")
+    
+    p = full_prod.data
     return ProductResponse(
-        id=prod["id"],
-        name=prod["name"],
-        category=cat_name,
-        price=prod["price"],
-        unit=prod.get("unit"),
-        tax=prod["tax"],
-        description=prod.get("description"),
-        send_to_kitchen=prod.get("send_to_kitchen"),
-        is_active=prod["is_active"],
-        variants=variants,
+        id=p["id"],
+        name=p["name"],
+        category=p["category"]["name"] if p.get("category") else "General",
+        price=p["price"],
+        unit=p.get("unit"),
+        tax=p["tax"],
+        description=p.get("description"),
+        send_to_kitchen=p.get("send_to_kitchen"),
+        is_active=p["is_active"],
+        variants=[ProductVariantResponse(**v) for v in p.get("product_variants", [])],
     )
 
 
@@ -160,19 +169,68 @@ def update_product(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
+    
+    # 1. Handle Variants sync handled later for better retrieval consistency
+    payload_dict = payload.model_dump(exclude_unset=True, mode='json')
+
+    # 2. Handle Category resolution
     if "category" in update_data:
         cat_name = update_data.pop("category")
         cat_res = db.table("product_categories").select("id").eq("name", cat_name).execute()
         if cat_res.data:
             update_data["category_id"] = cat_res.data[0]["id"]
+        else:
+            # Create category if not found
+            new_cat = db.table("product_categories").insert({"name": cat_name}).execute()
+            if new_cat.data:
+                update_data["category_id"] = new_cat.data[0]["id"]
 
-    res = db.table("products").update(update_data).eq("id", product_id).execute()
-    if not res.data:
-        raise HTTPException(404, "Product not found.")
+    # 3. Update Product
+    if update_data:
+        res = db.table("products").update(update_data).eq("id", product_id).execute()
+        if not res.data:
+            raise HTTPException(404, "Product not found.")
+
+    # 1. Handle Variants sync (moved after update for logic flow, but before retrieval)
+    if "variants" in payload_dict and payload_dict["variants"] is not None:
+        variants_in = payload_dict["variants"]
+        # Delete existing
+        db.table("product_variants").delete().eq("product_id", product_id).execute()
+        # Bulk Insert
+        if variants_in:
+            to_insert = [
+                {
+                    "product_id": product_id,
+                    "attribute": v["attribute"],
+                    "value": v["value"],
+                    "extra_price": float(v["extra_price"])
+                } for v in variants_in
+            ]
+            db.table("product_variants").insert(to_insert).execute()
+
+    # 4. Consolidated Refresh with Single Join
+    full_prod = db.table("products")\
+        .select("*, product_variants(*), category:product_categories(name)")\
+        .eq("id", product_id)\
+        .single().execute()
     
-    # Return enriched response
-    return list_products(db, current)[0] # Simplified refresh for response
+    if not full_prod.data:
+        raise HTTPException(404, "Product not found after update.")
+        
+    p = full_prod.data
+    return ProductResponse(
+        id=p["id"],
+        name=p["name"],
+        category=p["category"]["name"] if p.get("category") else "General",
+        price=p["price"],
+        unit=p.get("unit"),
+        tax=p["tax"],
+        description=p.get("description"),
+        send_to_kitchen=p.get("send_to_kitchen"),
+        is_active=p["is_active"],
+        variants=[ProductVariantResponse(**v) for v in p.get("product_variants", [])],
+    )
 
 
 @router.delete("/products/{product_id}", status_code=204)
@@ -224,7 +282,7 @@ def update_floor(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
     res = db.table("floors").update(update_data).eq("id", floor_id).execute()
     if not res.data:
         raise HTTPException(404, "Floor not found.")
@@ -279,7 +337,7 @@ def update_table(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
     res = db.table("tables").update(update_data).eq("id", table_id).execute()
     if not res.data:
         raise HTTPException(404, "Table not found.")
@@ -333,7 +391,7 @@ def update_payment_method(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
     res = db.table("payment_methods").update(update_data).eq("id", pm_id).execute()
     if not res.data:
         raise HTTPException(404, "Payment method not found.")

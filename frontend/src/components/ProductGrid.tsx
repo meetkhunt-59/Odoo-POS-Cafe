@@ -12,7 +12,7 @@ export default function ProductGrid({ products, onAddProduct }: Props) {
   if (products.length === 0) {
     return (
       <div className="product-grid-empty">
-        <p>No products found. Add products from the <strong>Backend Setup</strong> page.</p>
+        <p>No products found. Add products from the <strong>Product Management</strong> page.</p>
       </div>
     );
   }

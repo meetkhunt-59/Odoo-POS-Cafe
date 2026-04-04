@@ -85,18 +85,32 @@ def get_kitchen_display(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    # Get all active orders that are not completed (or just for today)
-    res = db.table("orders").select("*, order_items(*)").neq("kitchen_status", "cancelled").order("created_at").execute()
-    orders = res.data
+    # Get all active orders that are not cancelled or completed
+    # We fetch products and variants in the same join for speed
+    res = db.table("orders").select("*, order_items(*, product:products(name, send_to_kitchen), variant:product_variants(value))").neq("kitchen_status", "cancelled").order("created_at").execute()
+    raw_orders = res.data
     
-    # Enrich with products
-    for order in orders:
+    kitchen_orders = []
+    for order in raw_orders:
+        valid_items = []
         for item in order.get("order_items", []):
-            p_res = db.table("products").select("name").eq("id", item["product_id"]).execute()
-            if p_res.data:
-                item["product_name"] = p_res.data[0]["name"]
+            prod = item.get("product")
+            if prod and prod.get("send_to_kitchen"):
+                # Enrich item with combined name
+                variant_val = item.get("variant", {}).get("value")
+                if variant_val:
+                    item["product_name"] = f"{prod['name']} ({variant_val})"
+                else:
+                    item["product_name"] = prod["name"]
                 
-    return orders
+                valid_items.append(item)
+        
+        # Only show orders that have at least one kitchen item
+        if valid_items:
+            order["order_items"] = valid_items
+            kitchen_orders.append(order)
+                
+    return kitchen_orders
 
 @router.patch("/orders/{order_id}/status", response_model=OrderResponse)
 def update_order_status(
@@ -115,15 +129,37 @@ def update_order_status(
     if not new_status:
         raise HTTPException(400, "Invalid kitchen action.")
         
-    upd = db.table("orders").update({"kitchen_status": new_status}).eq("id", order_id).execute()
-    if not upd.data:
-        raise HTTPException(404, "Order not found.")
+    try:
+        upd = db.table("orders").update({"kitchen_status": new_status}).eq("id", order_id).execute()
+        if not upd.data:
+            raise HTTPException(404, "Order not found.")
+    except Exception as e:
+        # Catch check constraint violations specifically to provide clear feedback
+        if "violates check constraint" in str(e):
+            raise HTTPException(400, f"Database constraint error: {str(e)}")
+        raise HTTPException(500, f"Failed to update kitchen status: {str(e)}")
         
-    final_order = upd.data[0]
-    # Fetch items for response model consistency
-    items_res = db.table("order_items").select("*").eq("order_id", order_id).execute()
-    final_order["items"] = items_res.data
-    return final_order
+    # FETCH ENRICHED for response
+    full_order = db.table("orders")\
+        .select("*, order_items(*, product:products(name, send_to_kitchen), variant:product_variants(value))")\
+        .eq("id", order_id)\
+        .single().execute()
+    
+    if not full_order.data:
+        raise HTTPException(404, "Order data lost during update.")
+        
+    order_data = full_order.data
+    # Prepare items list with names for ProductResponse
+    items = []
+    for item in order_data.get("order_items", []):
+        prod = item.get("product")
+        if prod:
+            variant_val = item.get("variant", {}).get("value")
+            item["product_name"] = f"{prod['name']} ({variant_val})" if variant_val else prod["name"]
+        items.append(item)
+    
+    order_data["items"] = items
+    return order_data
 
 @router.get("/display/customer/{order_id}")
 def get_customer_display(

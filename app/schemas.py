@@ -66,6 +66,7 @@ class ProductUpdateRequest(BaseModel):
     description: str | None = None
     send_to_kitchen: bool | None = None
     is_active: bool | None = None
+    variants: list[VariantInput] | None = None
 
 
 class ProductResponse(BaseModel):
@@ -186,6 +187,7 @@ class OrderCreateRequest(BaseModel):
 class OrderItemResponse(BaseModel):
     id: UUID
     product_id: UUID
+    product_name: str | None = None
     variant_id: UUID | None
     quantity: int
     price_at_checkout: Decimal

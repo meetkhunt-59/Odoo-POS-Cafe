@@ -11,7 +11,7 @@ export default function Sidebar() {
 
   const navItems = [
     { icon: Home, label: 'Menu', to: '/pos' },
-    { icon: Layers, label: 'Backend Setup', to: '/admin/backend' },
+    { icon: Layers, label: 'Product Management', to: '/admin/backend' },
     { icon: Coffee, label: 'Table Services', to: '/pos/tables' },
     { icon: Calendar, label: 'Reservation', to: '/pos/reservations' },
     { icon: Truck, label: 'Kitchen', to: '/pos/delivery' },

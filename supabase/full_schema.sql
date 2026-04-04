@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   session_id UUID NOT NULL REFERENCES public.pos_sessions(id) ON DELETE RESTRICT,
   table_id UUID REFERENCES public.tables(id) ON DELETE SET NULL,
   kitchen_status TEXT NOT NULL DEFAULT 'to_cook'
-    CHECK (kitchen_status IN ('to_cook', 'preparing', 'completed')),
+    CHECK (kitchen_status IN ('to_cook', 'preparing', 'completed', 'cancelled')),
   payment_status TEXT NOT NULL DEFAULT 'unpaid'
     CHECK (payment_status IN ('unpaid', 'paid')),
   payment_method_id UUID REFERENCES public.payment_methods(id) ON DELETE RESTRICT,

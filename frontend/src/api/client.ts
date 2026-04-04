@@ -71,11 +71,11 @@ export async function createCategory(token: string, name: string): Promise<Produ
   return handleResponse<ProductCategory>(res);
 }
 
-export async function updateCategory(token: string, id: string, name: string): Promise<ProductCategory> {
+export async function updateCategory(token: string, id: string, data: { name?: string; send_to_kitchen?: boolean }): Promise<ProductCategory> {
   const res = await fetch(`${API_BASE}/backend/product-categories/${id}`, {
     method: 'PUT',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(data),
   });
   return handleResponse<ProductCategory>(res);
 }
@@ -97,6 +97,7 @@ export async function createProduct(
     tax?: number;
     description?: string;
     send_to_kitchen?: boolean;
+    variants?: { attribute: string; value: string; extra_price: number }[];
   }
 ): Promise<Product> {
   const res = await fetch(`${API_BASE}/backend/products`, {

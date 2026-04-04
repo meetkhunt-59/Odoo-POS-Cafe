@@ -23,8 +23,18 @@ export default function BackendPage() {
   const [prodName, setProdName] = useState('');
   const [prodCategory, setProdCategory] = useState('');
   const [prodPrice, setProdPrice] = useState('');
+  const [prodUnit, setProdUnit] = useState('');
   const [prodTax, setProdTax] = useState('0');
   const [prodDesc, setProdDesc] = useState('');
+  const [prodVariants, setProdVariants] = useState<{ attribute: string; value: string; extra_price: number }[]>([]);
+
+  const addVariantRow = () => setProdVariants([...prodVariants, { attribute: '', value: '', extra_price: 0 }]);
+  const removeVariantRow = (idx: number) => setProdVariants(prodVariants.filter((_, i) => i !== idx));
+  const updateVariantRow = (idx: number, field: string, val: any) => {
+    const next = [...prodVariants];
+    (next[idx] as any)[field] = val;
+    setProdVariants(next);
+  };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,10 +44,12 @@ export default function BackendPage() {
         name: prodName,
         category: prodCategory || 'General',
         price: parseFloat(prodPrice),
+        unit: prodUnit || undefined,
         tax: parseFloat(prodTax) || 0,
         description: prodDesc || undefined,
+        variants: prodVariants.length > 0 ? prodVariants : undefined,
       });
-      setProdName(''); setProdCategory(''); setProdPrice(''); setProdTax('0'); setProdDesc('');
+      setProdName(''); setProdCategory(''); setProdPrice(''); setProdUnit(''); setProdTax('0'); setProdDesc(''); setProdVariants([]);
       await fetchProducts(token);
       await fetchCategories(token);
     } catch (err: any) {
@@ -173,7 +185,7 @@ export default function BackendPage() {
       <main className="backend-main">
         <h1 className="backend-title">
           <Layers size={28} />
-          POS Backend Setup
+          Product Management
         </h1>
 
         {error && <div className="backend-error">{error}</div>}
@@ -196,6 +208,41 @@ export default function BackendPage() {
           {/* ════════ PRODUCTS TAB ════════ */}
           {activeTab === 'products' && (
             <div className="backend-section">
+              {/* Category Manager */}
+              <div className="categories-manager">
+                <div className="builder-header">
+                  <h3><Layers size={18} /> Manage Categories</h3>
+                </div>
+                <div className="cat-grid">
+                  {categories.map((c) => (
+                    <div key={c.id} className="cat-card">
+                      <div className="cat-card-main">
+                        <input 
+                          className="cat-name-input"
+                          value={c.name}
+                          onBlur={async (e) => {
+                            if (e.target.value !== c.name) {
+                              await api.updateCategory(token, c.id, { name: e.target.value });
+                              await fetchCategories(token);
+                            }
+                          }}
+                        />
+                        <div className="cat-toggles">
+                          {/* Kitchen toggle removed per requirements */}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button className="add-cat-btn" onClick={async () => {
+                    const name = prompt('New Category Name:');
+                    if (name) {
+                      await api.createCategory(token, name);
+                      await fetchCategories(token);
+                    }
+                  }}>+ New Category</button>
+                </div>
+              </div>
+
               <form className="backend-form" onSubmit={handleCreateProduct}>
                 <h3><Plus size={18} /> Add Product</h3>
                 <div className="form-row">
@@ -207,9 +254,30 @@ export default function BackendPage() {
                 </div>
                 <div className="form-row">
                   <input placeholder="Price *" type="number" step="0.01" min="0.01" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} required />
+                  <input placeholder="Unit (e.g. kg, pc)" value={prodUnit} onChange={(e) => setProdUnit(e.target.value)} />
                   <input placeholder="Tax %" type="number" step="0.01" min="0" value={prodTax} onChange={(e) => setProdTax(e.target.value)} />
-                  <input placeholder="Description" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} />
                 </div>
+                <div className="form-row">
+                  <textarea placeholder="Product Description" value={prodDesc} onChange={(e) => setProdDesc(e.target.value)} className="form-textarea" />
+                </div>
+
+                <div className="variants-builder">
+                  <div className="builder-header">
+                    <h4>Product Variants</h4>
+                    <button type="button" className="add-variant-btn" onClick={addVariantRow}>
+                      <Plus size={14} /> Add Variant
+                    </button>
+                  </div>
+                  {prodVariants.map((v, i) => (
+                    <div key={i} className="variant-row">
+                      <input placeholder="Attr (e.g. Size)" value={v.attribute} onChange={e => updateVariantRow(i, 'attribute', e.target.value)} />
+                      <input placeholder="Value (e.g. Large)" value={v.value} onChange={e => updateVariantRow(i, 'value', e.target.value)} />
+                      <input placeholder="Extra Price" type="number" step="0.01" value={v.extra_price} onChange={e => updateVariantRow(i, 'extra_price', parseFloat(e.target.value) || 0)} />
+                      <button type="button" className="remove-variant-btn" onClick={() => removeVariantRow(i)}>✕</button>
+                    </div>
+                  ))}
+                </div>
+
                 <button type="submit" className="backend-submit">Add Product</button>
               </form>
 
@@ -220,8 +288,19 @@ export default function BackendPage() {
                   <div key={p.id} className="backend-list-item">
                     <div className="list-item-icon">📦</div>
                     <div className="list-item-info">
-                      <span className="list-item-name">{p.name}</span>
-                      <span className="list-item-meta">{p.category} • ₹{Number(p.price).toFixed(2)} • Tax: {Number(p.tax)}%</span>
+                      <span className="list-item-name">
+                        {p.name} {p.unit ? `(${p.unit})` : ''}
+                      </span>
+                      <span className="list-item-meta">
+                        {p.category} • ₹{Number(p.price).toFixed(2)} • Tax: {Number(p.tax)}%
+                        {p.variants.length > 0 && (
+                          <div className="variant-badges">
+                            {p.variants.map((v, i) => (
+                              <span key={i} className="variant-badge">{v.attribute}: {v.value} (+₹{v.extra_price})</span>
+                            ))}
+                          </div>
+                        )}
+                      </span>
                     </div>
                     <div className="item-actions">
                       <button className="edit-btn-small" onClick={() => setEditingItem({ type: 'product', data: { ...p } })}>
@@ -361,17 +440,70 @@ export default function BackendPage() {
               <form onSubmit={handleUpdateItem}>
                 {editingItem.type === 'product' && (
                   <div className="edit-fields">
-                    <input 
-                      placeholder="Name" 
-                      value={editingItem.data.name} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value }})}
-                    />
-                    <input 
-                      placeholder="Price" 
-                      type="number"
-                      value={editingItem.data.price} 
-                      onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, price: e.target.value }})}
-                    />
+                    <div className="form-row">
+                      <div className="field-group">
+                        <label>Name</label>
+                        <input value={editingItem.data.name} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, name: e.target.value }})} />
+                      </div>
+                      <div className="field-group">
+                        <label>Category</label>
+                        <input value={editingItem.data.category} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, category: e.target.value }})} list="cat-list" />
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="field-group">
+                        <label>Price</label>
+                        <input type="number" step="0.01" value={editingItem.data.price} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, price: e.target.value }})} />
+                      </div>
+                      <div className="field-group">
+                        <label>Unit</label>
+                        <input value={editingItem.data.unit || ''} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, unit: e.target.value }})} />
+                      </div>
+                      <div className="field-group">
+                        <label>Tax %</label>
+                        <input type="number" step="0.01" value={editingItem.data.tax} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, tax: e.target.value }})} />
+                      </div>
+                    </div>
+                    <div className="field-group">
+                      <label>Description</label>
+                      <textarea value={editingItem.data.description || ''} onChange={e => setEditingItem({ ...editingItem, data: { ...editingItem.data, description: e.target.value }})} className="form-textarea" />
+                    </div>
+
+                    <div className="variants-builder edit-variants">
+                      <div className="builder-header">
+                        <label>Variants</label>
+                        <button type="button" className="add-variant-btn-small" onClick={() => {
+                          const next = [...(editingItem.data.variants || [])];
+                          next.push({ attribute: '', value: '', extra_price: 0 });
+                          setEditingItem({ ...editingItem, data: { ...editingItem.data, variants: next } });
+                        }}>
+                          + Add
+                        </button>
+                      </div>
+                      {(editingItem.data.variants || []).map((v: any, i: number) => (
+                        <div key={i} className="variant-row-small">
+                          <input placeholder="Attribute" value={v.attribute} onChange={e => {
+                            const next = [...editingItem.data.variants];
+                            next[i].attribute = e.target.value;
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, variants: next } });
+                          }} />
+                          <input placeholder="Value" value={v.value} onChange={e => {
+                            const next = [...editingItem.data.variants];
+                            next[i].value = e.target.value;
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, variants: next } });
+                          }} />
+                          <input placeholder="Extra" type="number" step="0.01" value={v.extra_price} onChange={e => {
+                            const next = [...editingItem.data.variants];
+                            next[i].extra_price = parseFloat(e.target.value) || 0;
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, variants: next } });
+                          }} />
+                          <button type="button" className="remove-variant-btn-small" onClick={() => {
+                            const next = editingItem.data.variants.filter((_: any, idx: number) => idx !== i);
+                            setEditingItem({ ...editingItem, data: { ...editingItem.data, variants: next } });
+                          }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {editingItem.type === 'floor' && (
