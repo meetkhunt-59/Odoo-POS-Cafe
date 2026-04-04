@@ -14,12 +14,12 @@ export default function OrderPanel() {
   const {
     cart,
     removeFromCart,
-    clearCartOnly,
     selectedTableId,
     session,
     tables,
   } = usePosStore();
 
+  const [orderType, setOrderType] = useState<'Dine In' | 'Take Away'>('Dine In');
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
 
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
@@ -32,11 +32,28 @@ export default function OrderPanel() {
   const selectedTable = tables.find((t) => t.id === selectedTableId);
 
   const handleSendToKitchen = async () => {
-    if (!token || !session || cart.length === 0) return;
+    if (cart.length === 0 || !token) return;
+    
+    let currentSession = session;
+    if (!currentSession) {
+      try {
+        currentSession = await api.openSession(token);
+        usePosStore.setState({ session: currentSession });
+      } catch (e: any) {
+        alert("System Error: Could not verify or create a valid POS session. " + e.message);
+        return;
+      }
+    }
+
+    if (orderType === 'Dine In' && !selectedTableId) {
+      alert("Please select a table on the Tables screen first.");
+      return;
+    }
+    
     try {
       const order = await api.createOrder(token, {
-        session_id: session.id,
-        table_id: selectedTableId,
+        session_id: currentSession.id,
+        table_id: orderType === 'Take Away' ? null : selectedTableId,
         items: cart.map((item) => ({
           product_id: item.product.id,
           variant_id: item.variant?.id, // Support variants
@@ -44,7 +61,7 @@ export default function OrderPanel() {
         })),
       });
       
-      clearCartOnly(); // Isolated dispatch: clear cart but keep table
+      usePosStore.getState().setActiveOrder({ id: order.id, number: order.order_number, total: Number(order.total_amount) });
       alert(`Order #${order.order_number} sent to kitchen!`);
     } catch (err: any) {
       alert(`Failed to send order: ${err.message}`);
@@ -58,7 +75,7 @@ export default function OrderPanel() {
       <div className="panel-header">
         <div>
           <h2 className="table-title">
-            {selectedTable ? `Table ${selectedTable.table_number}` : 'No Table'}
+            {orderType === 'Take Away' ? 'Take Away' : (selectedTable ? `Table ${selectedTable.table_number}` : 'No Table')}
           </h2>
           <span className="waiter-name">{profile?.name || 'Staff'}</span>
         </div>
@@ -69,10 +86,11 @@ export default function OrderPanel() {
 
       {/* Order Type Tabs */}
       <div className="order-type-tabs">
-        {['Dine In', 'Take Away'].map(type => (
+        {(['Dine In', 'Take Away'] as const).map(type => (
           <button
             key={type}
-            className={`tab-btn ${type === 'Dine In' ? 'active' : ''}`}
+            className={`tab-btn ${orderType === type ? 'active' : ''}`}
+            onClick={() => setOrderType(type)}
           >
             {type}
           </button>
@@ -125,14 +143,26 @@ export default function OrderPanel() {
         <button
           className="send-kitchen-btn"
           onClick={handleSendToKitchen}
-          disabled={cart.length === 0 || !session}
+          disabled={cart.length === 0}
         >
           Send to Kitchen
         </button>
         <button
           className="pay-btn"
-          onClick={() => navigate('/pos/payment')}
-          disabled={cart.length === 0 || !session}
+          onClick={async () => {
+            let currentSession = session;
+            if (!currentSession) {
+              try {
+                currentSession = await api.openSession(token!);
+                usePosStore.setState({ session: currentSession });
+              } catch (e: any) {
+                alert("System Error: Could not open session. " + e.message);
+                return;
+              }
+            }
+            navigate('/pos/payment');
+          }}
+          disabled={cart.length === 0}
         >
           {cart.length === 0 ? 'Payment' : `Pay ₹${total.toFixed(2)}`}
         </button>

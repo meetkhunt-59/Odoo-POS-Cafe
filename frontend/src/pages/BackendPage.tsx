@@ -363,6 +363,7 @@ export default function BackendPage() {
                       <div key={t.id} className="backend-list-item table-item">
                         <div className="list-item-icon">🪑</div>
                         <div className="list-item-info">
+                          <span className="list-item-name">Table {t.table_number}</span>
                           <span className="list-item-meta">{t.seats} seats</span>
                         </div>
                         <div className="item-actions">

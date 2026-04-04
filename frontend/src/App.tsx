@@ -34,12 +34,12 @@ function App() {
       {/* Protected routes */}
       <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
       <Route path="/pos/tables" element={<RequireAuth><FloorSelectionPage /></RequireAuth>} />
-      <Route path="/pos/*" element={<RequireAuth><POSPage /></RequireAuth>} />
-      <Route path="/pos/delivery" element={<RequireAuth><KitchenPage /></RequireAuth>} />
+      <Route path="/pos/kitchen" element={<RequireAuth><KitchenPage /></RequireAuth>} />
       <Route path="/admin/backend" element={<RequireAuth><BackendPage /></RequireAuth>} />
       <Route path="/pos/customer-display" element={<RequireAuth><CustomerDisplayPage /></RequireAuth>} />
       <Route path="/pos/payment" element={<RequireAuth><PaymentPage /></RequireAuth>} />
       <Route path="/customer/:orderId" element={<CustomerPage />} />
+      <Route path="/pos/*" element={<RequireAuth><POSPage /></RequireAuth>} />
 
       {/* Default redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -87,7 +87,7 @@ def get_kitchen_display(
 ):
     # Get all active orders that are not cancelled or completed
     # We fetch products and variants in the same join for speed
-    res = db.table("orders").select("*, order_items(*, product:products(name, send_to_kitchen), variant:product_variants(value))").neq("kitchen_status", "cancelled").order("created_at").execute()
+    res = db.table("orders").select("*, order_items(*, product:products(name, send_to_kitchen, category:product_categories(name)), variant:product_variants(value))").neq("kitchen_status", "cancelled").order("created_at").execute()
     raw_orders = res.data
     
     kitchen_orders = []
@@ -97,11 +97,16 @@ def get_kitchen_display(
             prod = item.get("product")
             if prod and prod.get("send_to_kitchen"):
                 # Enrich item with combined name
-                variant_val = item.get("variant", {}).get("value")
+                variant_data = item.get("variant")
+                variant_val = variant_data.get("value") if isinstance(variant_data, dict) else None
                 if variant_val:
                     item["product_name"] = f"{prod['name']} ({variant_val})"
                 else:
                     item["product_name"] = prod["name"]
+                
+                # Fetch dynamically joined Category Name
+                cat_dict = prod.get("category")
+                item["category_name"] = cat_dict.get("name") if cat_dict else "General"
                 
                 valid_items.append(item)
         
@@ -154,7 +159,8 @@ def update_order_status(
     for item in order_data.get("order_items", []):
         prod = item.get("product")
         if prod:
-            variant_val = item.get("variant", {}).get("value")
+            variant_data = item.get("variant")
+            variant_val = variant_data.get("value") if isinstance(variant_data, dict) else None
             item["product_name"] = f"{prod['name']} ({variant_val})" if variant_val else prod["name"]
         items.append(item)
     

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import POSLayout from '../layouts/POSLayout';
 import CategoryFilterRow from '../components/CategoryFilterRow';
 import ProductGrid from '../components/ProductGrid';
+import OrderPanel from '../components/OrderPanel';
+import TerminalTopNav from '../components/TerminalTopNav';
 import { useAuthStore } from '../store/authStore';
 import { usePosStore } from '../store/posStore';
 import type { Product } from '../api/types';
+import './FloorSelectionPage.css';
 
 export default function POSPage() {
   const token = useAuthStore((s) => s.token)!;
@@ -41,26 +43,32 @@ export default function POSPage() {
 
   if (loading && !session) {
     return (
-      <POSLayout>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 16 }}>
+      <div className="floor-layout-wrapper">
+        <div className="floor-main-content" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: 'var(--text-secondary)', fontSize: 16 }}>Loading POS data...</p>
         </div>
-      </POSLayout>
+      </div>
     );
   }
 
   return (
-    <POSLayout showOrderPanel={true}>
-      <CategoryFilterRow
-        categories={filterCategories}
-        selectedId={selectedCategoryId}
-        onSelect={setSelectedCategoryId}
-      />
-      <ProductGrid
-        products={filteredProducts}
-        onAddProduct={handleAddProduct}
-      />
+    <div className="floor-layout-wrapper">
+      {/* LEFT PANE: 75% Products (reuses floor wrapper) */}
+      <div className="floor-main-content" style={{ padding: 0 }}>
+        <TerminalTopNav />
+        <CategoryFilterRow
+          categories={filterCategories}
+          selectedId={selectedCategoryId}
+          onSelect={setSelectedCategoryId}
+        />
+        <ProductGrid
+          products={filteredProducts}
+          onAddProduct={handleAddProduct}
+        />
+      </div>
 
-    </POSLayout>
+      {/* RIGHT PANE: 25% OrderPanel (Receipt) */}
+      <OrderPanel />
+    </div>
   );
 }

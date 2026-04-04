@@ -2,7 +2,7 @@ import { usePosStore } from '../store/posStore';
 import './CustomerDisplayPage.css';
 
 export default function CustomerDisplayPage() {
-  const { cart, selectedTableId, tables } = usePosStore();
+  const { cart, selectedTableId, tables, paymentSuccessOrderNumber } = usePosStore();
   
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
   const selectedTable = tables.find(t => t.id === selectedTableId);
@@ -20,7 +20,13 @@ export default function CustomerDisplayPage() {
         <div className="cfd-body">
            <div className="cfd-cart">
               <h2>Current Order</h2>
-              {cart.length === 0 ? (
+              {paymentSuccessOrderNumber ? (
+                <div className="success-msg-cfd">
+                   <h2>✅ Payment Successful!</h2>
+                   <p>Your Order #{paymentSuccessOrderNumber} is preparing.</p>
+                   <p className="thank-you">Thank you for dining with us!</p>
+                </div>
+              ) : cart.length === 0 ? (
                 <div className="empty-msg">Your items will appear here...</div>
               ) : (
                 <div className="cart-list">

@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePosStore } from '../store/posStore';
 import DashboardNavbar from '../components/DashboardNavbar';
-import { MoreVertical, Settings } from 'lucide-react';
+import { MoreVertical, Settings, Monitor, MonitorPlay } from 'lucide-react';
 import './DashboardPage.css';
 
 export default function DashboardPage() {
@@ -14,6 +15,8 @@ export default function DashboardPage() {
     // Step 2: Location Selection
     navigate('/pos/tables');
   };
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
     <div className="pos-dashboard-root">
@@ -28,7 +31,28 @@ export default function DashboardPage() {
             <div className="card-top-accent"></div>
             <div className="card-header">
               <h2 className="register-name">Odoo Cafe</h2>
-              <button className="register-options"><MoreVertical size={20} /></button>
+              <div className="options-dropdown-container">
+                <button className="register-options" onClick={() => setDropdownOpen(!dropdownOpen)}>
+                  <MoreVertical size={20} />
+                </button>
+                
+                {dropdownOpen && (
+                  <div className="options-menu-popup">
+                    <button className="dropdown-menu-item" onClick={() => navigate('/backend')}>
+                      <Settings size={16} /> Settings
+                    </button>
+                    <button className="dropdown-menu-item" onClick={() => navigate('/pos/kitchen')}>
+                      <Monitor size={16} /> Kitchen Display
+                    </button>
+                    <button className="dropdown-menu-item" onClick={() => {
+                        setDropdownOpen(false);
+                        window.open('/pos/customer-display', 'CustomerDisplay', 'width=1024,height=768');
+                      }}>
+                      <MonitorPlay size={16} /> Customer Display
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="card-content">

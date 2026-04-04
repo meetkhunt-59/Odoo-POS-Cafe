@@ -18,15 +18,15 @@ def list_categories(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    cats = db.table("product_categories").select("*").order("created_at").execute()
+    # Use join instead of N+1 loop for product counts
+    cats = db.table("product_categories").select("*, products(id)").order("created_at").execute()
     result = []
     for c in cats.data:
-        count_res = db.table("products").select("id", count="exact").eq("category_id", c["id"]).execute()
         result.append(CategoryResponse(
             id=c["id"],
             name=c["name"],
             send_to_kitchen=c.get("send_to_kitchen", True),
-            product_count=count_res.count or 0,
+            product_count=len(c.get("products", [])),
         ))
     return result
 
@@ -66,22 +66,17 @@ def list_products(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    prods = db.table("products").select("*").eq("is_active", True).order("created_at").execute()
-    cats_cache: dict[str, str] = {}
+    # Deep join with variants and categories instead of N+1 sequence
+    prods = db.table("products").select("*, product_variants(*), category:product_categories(name)").eq("is_active", True).order("created_at").execute()
     result = []
     for p in prods.data:
-        cat_id = p["category_id"]
-        if cat_id not in cats_cache:
-            cat_res = db.table("product_categories").select("name").eq("id", cat_id).execute()
-            cats_cache[cat_id] = cat_res.data[0]["name"] if cat_res.data else "Unknown"
-
-        variants_res = db.table("product_variants").select("*").eq("product_id", p["id"]).execute()
-        variants = [ProductVariantResponse(**v) for v in variants_res.data]
+        cat_name = p.get("category", {}).get("name") if p.get("category") else "Unknown"
+        variants = [ProductVariantResponse(**v) for v in p.get("product_variants", [])]
 
         result.append(ProductResponse(
             id=p["id"],
             name=p["name"],
-            category=cats_cache[cat_id],
+            category=cat_name,
             price=p["price"],
             unit=p.get("unit"),
             tax=p["tax"],
@@ -251,14 +246,15 @@ def list_floors(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    floors = db.table("floors").select("*").order("created_at").execute()
+    # Deep join with tables instead of N+1 sequence
+    floors = db.table("floors").select("*, tables(*)").order("created_at").execute()
     result = []
     for f in floors.data:
-        tables_res = db.table("tables").select("*").eq("floor_id", f["id"]).order("table_number").execute()
+        sorted_tables = sorted(f.get("tables", []), key=lambda t: t.get("table_number"))
         result.append(FloorResponse(
             id=f["id"],
             name=f["name"],
-            tables=[TableResponse(**t) for t in tables_res.data],
+            tables=[TableResponse(**t) for t in sorted_tables],
         ))
     return result
 

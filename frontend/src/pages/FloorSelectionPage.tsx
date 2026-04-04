@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import { ChevronRight, Coffee, Layers, User } from 'lucide-react';
+import TerminalTopNav from '../components/TerminalTopNav';
 import './FloorSelectionPage.css';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,8 +34,10 @@ export default function FloorSelectionPage() {
   return (
     <div className="floor-layout-wrapper">
       {/* LEFT PANE: 75% Tables */}
-      <div className="floor-main-content">
-        <header className="floor-header">
+      <div className="floor-main-content" style={{ padding: 0 }}>
+        <TerminalTopNav />
+        <div style={{ padding: '24px' }}>
+          <header className="floor-header">
           <div className="floor-tabs">
             {floors.map(floor => (
               <button 
@@ -73,6 +76,7 @@ export default function FloorSelectionPage() {
              ))
            )}
         </section>
+        </div>
       </div>
 
       {/* RIGHT PANE: 25% Receipt-like summary */}
