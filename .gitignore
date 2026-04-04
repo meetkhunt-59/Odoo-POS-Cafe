@@ -5,3 +5,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
+# Node / Frontend
+node_modules/
+dist/
+dist-ssr/
+build/
+.DS_Store
+env/

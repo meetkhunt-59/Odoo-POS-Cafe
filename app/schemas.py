@@ -1,75 +1,208 @@
 from __future__ import annotations
 
-from datetime import datetime, time
+from datetime import datetime
+from decimal import Decimal
+from uuid import UUID
 
-from pydantic import BaseModel, Field
-from pydantic import model_validator
-
-from app.models import UserRole
+from pydantic import BaseModel, Field, constr
 
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
-
-
-class UserPublic(BaseModel):
-    id: int
-    username: str
-    email: str | None
-    role: UserRole
-    is_active: bool
-    created_at: datetime
+    token_type: str
+    expires_in: int | None = None
+    refresh_token: str | None = None
 
 
 class SignupRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=64)
-    email: str | None = Field(default=None, max_length=320)
-    password: str = Field(min_length=6, max_length=128)
+    email: constr(min_length=3, max_length=320)
+    password: constr(min_length=6, max_length=128)
+    name: constr(min_length=1, max_length=120)
 
 
-class LoginRequest(BaseModel):
-    identifier: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=1, max_length=128)
+class ProfilePublic(BaseModel):
+    id: UUID
+    name: str
+    role: str
+    created_at: datetime
 
 
 class AdminCreateUserRequest(BaseModel):
-    username: str = Field(min_length=3, max_length=64)
-    email: str | None = Field(default=None, max_length=320)
-    password: str = Field(min_length=6, max_length=128)
-    role: UserRole
+    email: constr(min_length=3, max_length=320)
+    password: constr(min_length=6, max_length=128)
+    name: constr(min_length=1, max_length=120)
+    role: str
 
 
-class ShiftCreateRequest(BaseModel):
-    user_id: int
-    name: str = Field(min_length=1, max_length=64)
-    start_time: time
-    end_time: time
-    # Either set `days_mask` directly (Mon=1<<0 .. Sun=1<<6) or provide `days` (0=Mon .. 6=Sun).
-    days_mask: int = Field(default=(1 << 7) - 1, ge=0)
-    days: list[int] | None = Field(default=None, description="0=Mon .. 6=Sun")
-    timezone: str | None = Field(default=None, max_length=64)
-    is_active: bool = True
-
-    @model_validator(mode="after")
-    def _normalize_days(self):
-        if self.days is None:
-            return self
-        mask = 0
-        for d in self.days:
-            if d < 0 or d > 6:
-                raise ValueError("days must be between 0 (Mon) and 6 (Sun)")
-            mask |= 1 << d
-        self.days_mask = mask
-        return self
+class VariantInput(BaseModel):
+    attribute: str
+    value: str
+    extra_price: Decimal = Field(default=Decimal("0"))
 
 
-class ShiftPublic(BaseModel):
-    id: int
-    user_id: int
+class ProductCreateRequest(BaseModel):
     name: str
-    start_time: time
-    end_time: time
-    days_mask: int
-    timezone: str | None
+    category: str = Field(default="General")
+    price: Decimal = Field(gt=0)
+    unit: str | None = None
+    tax: Decimal = Field(default=Decimal("0"))
+    description: str | None = None
+    send_to_kitchen: bool = Field(default=True)
+    variants: list[VariantInput] = Field(default_factory=list)
+
+
+class ProductVariantResponse(BaseModel):
+    id: UUID
+    attribute: str
+    value: str
+    extra_price: Decimal
+
+
+class ProductResponse(BaseModel):
+    id: UUID
+    name: str
+    category: str
+    price: Decimal
+    unit: str | None
+    tax: Decimal
+    description: str | None
+    send_to_kitchen: bool | None
     is_active: bool
+    variants: list[ProductVariantResponse]
+
+
+class FloorRequest(BaseModel):
+    name: str
+
+
+class CategoryRequest(BaseModel):
+    name: str
+
+
+class FloorResponse(BaseModel):
+    id: UUID
+    name: str
+    tables: list["TableResponse"] = Field(default_factory=list)
+
+
+class TableRequest(BaseModel):
+    floor_id: UUID
+    table_number: str
+    seats: int = Field(default=2, ge=1)
+    is_active: bool = True
+    appointment_resource: bool = False
+
+
+class TableResponse(BaseModel):
+    id: UUID
+    floor_id: UUID
+    table_number: str
+    seats: int
+    is_active: bool
+    appointment_resource: bool
+
+
+class PaymentMethodRequest(BaseModel):
+    type: str
+    name: str
+    is_enabled: bool = True
+    upi_id: str | None = None
+
+
+class PaymentMethodResponse(BaseModel):
+    id: UUID
+    name: str
+    type: str
+    is_enabled: bool
+    upi_id: str | None
+
+
+class SessionSummary(BaseModel):
+    id: UUID
+    status: str
+    responsible_user_id: UUID
+    opened_at: datetime
+    closed_at: datetime | None
+    closing_sale_amount: Decimal | None
+
+
+class SessionOpenRequest(BaseModel):
+    table_id: UUID | None = None
+
+
+class SessionCloseRequest(BaseModel):
+    closing_sale_amount: Decimal
+
+
+class OrderItemInput(BaseModel):
+    product_id: UUID
+    variant_id: UUID | None = None
+    quantity: int = Field(gt=0)
+
+
+class OrderCreateRequest(BaseModel):
+    session_id: UUID
+    table_id: UUID | None = None
+    items: list[OrderItemInput]
+
+
+class OrderItemResponse(BaseModel):
+    id: UUID
+    product_id: UUID
+    variant_id: UUID | None
+    quantity: int
+    price_at_checkout: Decimal
+    is_prepared: bool
+
+
+class OrderResponse(BaseModel):
+    id: UUID
+    order_number: int
+    session_id: UUID
+    table_id: UUID | None
+    kitchen_status: str
+    payment_status: str
+    total_amount: Decimal
+    items: list[OrderItemResponse]
+
+
+class OrderPayRequest(BaseModel):
+    payment_method_id: UUID
+
+
+class KitchenActionRequest(BaseModel):
+    action: str
+
+
+class SelfOrderTokenRequest(BaseModel):
+    session_id: UUID
+    table_id: UUID
+
+
+class SelfOrderTokenResponse(BaseModel):
+    token: str
+
+
+class ReportFilters(BaseModel):
+    period_from: datetime | None = None
+    period_to: datetime | None = None
+    session_id: UUID | None = None
+    responsible_user_id: UUID | None = None
+    product_id: UUID | None = None
+
+
+class ReportRow(BaseModel):
+    product_id: UUID
+    product_name: str
+    total_amount: Decimal
+    total_quantity: int
+
+
+class ReportResponse(BaseModel):
+    rows: list[ReportRow]
+    total_sales: Decimal
+    total_orders: int
+
+
+FloorRequest.model_rebuild()
+FloorResponse.model_rebuild()

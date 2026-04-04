@@ -1,0 +1,97 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.db import Client, get_db
+from app.deps import get_current_user
+from app.schemas import SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, OrderPayRequest, OrderItemResponse
+from decimal import Decimal
+
+router = APIRouter(prefix="/terminal", tags=["terminal"])
+
+@router.post("/sessions/open", response_model=SessionSummary)
+def open_session(
+    payload: SessionOpenRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("pos_sessions").insert({"responsible_user_id": current["id"]}).execute()
+    if not res.data:
+        raise HTTPException(500, "Failed to open session: missing returned ID representation.")
+    return SessionSummary(**res.data[0])
+
+@router.post("/orders", response_model=OrderResponse)
+def create_order(
+    payload: OrderCreateRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    order_data = {
+        "session_id": str(payload.session_id),
+        "table_id": str(payload.table_id) if payload.table_id else None,
+    }
+    order_res = db.table("orders").insert(order_data).execute()
+    if not order_res.data:
+        raise HTTPException(500, "Failed to process order creation representation.")
+    order = order_res.data[0]
+    
+    total = Decimal("0")
+    order_items = []
+    for item_data in payload.items:
+        prod_res = db.table("products").select("*").eq("id", str(item_data.product_id)).execute()
+        if not prod_res.data:
+            raise HTTPException(404, f"Product {item_data.product_id} not found in catalog.")
+        prod = prod_res.data[0]
+        
+        insert_data = {
+            "order_id": order["id"],
+            "product_id": prod["id"],
+            "quantity": item_data.quantity,
+            "price_at_checkout": prod["price"],
+        }
+        item_res = db.table("order_items").insert(insert_data).execute()
+        if not item_res.data:
+             raise HTTPException(500, "Failed to insert order item representation.")
+        order_items.append(item_res.data[0])
+        total += Decimal(str(prod["price"])) * Decimal(str(item_data.quantity))
+    
+    upd = db.table("orders").update({"total_amount": float(total)}).eq("id", order["id"]).execute()
+    if not upd.data:
+        raise HTTPException(500, "Failed to execute final order total calculation update.")
+        
+    final_order = upd.data[0]
+    final_order["items"] = order_items
+    return final_order
+
+@router.post("/orders/{order_id}/pay", response_model=OrderResponse)
+def pay_order(
+    order_id: str,
+    payload: OrderPayRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    upd = db.table("orders").update({
+        "payment_method_id": str(payload.payment_method_id),
+        "payment_status": "paid"
+    }).eq("id", order_id).execute()
+    if not upd.data:
+        raise HTTPException(status_code=404, detail="Order not found or update returned no data.")
+    final_order = upd.data[0]
+    final_order["items"] = []
+    return final_order
+
+@router.get("/display/kitchen")
+def get_kitchen_display(
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("orders").select("id, total_amount").eq("kitchen_status", "to_cook").execute()
+    return res.data
+
+@router.get("/display/customer/{order_id}")
+def get_customer_display(
+    order_id: str,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("orders").select("payment_status").eq("id", order_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Display target order not found.")
+    return res.data[0]
