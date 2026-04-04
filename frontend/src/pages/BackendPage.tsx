@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { usePosStore } from '../store/posStore';
 import * as api from '../api/client';
-import Sidebar from '../components/Sidebar';
 import { Plus, Trash2, Package, MapPin, CreditCard, Layers, Edit } from 'lucide-react';
 import './BackendPage.css';
 
@@ -181,7 +180,6 @@ export default function BackendPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100%', overflow: 'hidden' }}>
-      <Sidebar />
       <main className="backend-main">
         <h1 className="backend-title">
           <Layers size={28} />

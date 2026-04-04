@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Sidebar from '../components/Sidebar';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
 import { CheckCircle2, Clock, PlayCircle, Loader2 } from 'lucide-react';
@@ -67,7 +66,6 @@ export default function KitchenPage() {
   if (loading && orders.length === 0) {
     return (
       <div className="kitchen-layout">
-        <Sidebar />
         <main className="kitchen-main">
           <div className="loading-state">
             <Loader2 className="animate-spin" size={48} />
@@ -80,7 +78,6 @@ export default function KitchenPage() {
 
   return (
     <div className="kitchen-layout">
-      <Sidebar />
       <main className="kitchen-main">
         <div className="kitchen-header">
           <h1>👩‍🍳 Kitchen Display System</h1>

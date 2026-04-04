@@ -1,5 +1,4 @@
 import React from 'react';
-import Sidebar from '../components/Sidebar';
 import OrderPanel from '../components/OrderPanel';
 import TerminalTopNav from '../components/TerminalTopNav';
 
@@ -11,8 +10,6 @@ interface POSLayoutProps {
 export default function POSLayout({ children, showOrderPanel = false }: POSLayoutProps) {
   return (
     <div className="pos-layout">
-      {/* 1. SIDEBAR: collapsible, fixed */}
-      <Sidebar />
 
       {/* 2. CONTENT AREA: flex-1, scrollable */}
       <main className="pos-main">
