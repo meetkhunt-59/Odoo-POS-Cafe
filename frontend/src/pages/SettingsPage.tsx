@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Store, CreditCard, Banknote, Smartphone } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { listPointOfSales, createPointOfSale } from '../api/client';
-import { PointOfSale } from '../api/types';
+import type { PointOfSale } from '../api/types';
 import { useAuthStore } from '../store/authStore';
 import './SettingsPage.css';
 

@@ -44,7 +44,7 @@ export default function DashboardNavbar() {
           
           {activeDropdown === 'orders' && (
             <div className="dashboard-dropdown-menu">
-              <button onClick={() => handleNavigate('/pos/kitchen')}>Orders</button>
+              <button onClick={() => handleNavigate('/transactions')}>Orders</button>
               <button onClick={() => handleNavigate('/pos/payment')}>Payment</button>
               <button onClick={() => {
                 setActiveDropdown(null);

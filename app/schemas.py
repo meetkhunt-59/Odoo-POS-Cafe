@@ -13,6 +13,26 @@ class TokenResponse(BaseModel):
     expires_in: int | None = None
     refresh_token: str | None = None
 
+class PointOfSaleRequest(BaseModel):
+    name: str
+    cash_enabled: bool = True
+    upi_enabled: bool = True
+    card_enabled: bool = True
+
+class PointOfSaleUpdate(BaseModel):
+    name: str | None = None
+    cash_enabled: bool | None = None
+    upi_enabled: bool | None = None
+    card_enabled: bool | None = None
+
+class PointOfSaleResponse(BaseModel):
+    id: UUID
+    name: str
+    cash_enabled: bool
+    upi_enabled: bool
+    card_enabled: bool
+    created_at: datetime
+
 
 class SignupRequest(BaseModel):
     email: constr(min_length=3, max_length=320)
@@ -242,6 +262,20 @@ class ReportResponse(BaseModel):
     total_sales: Decimal
     total_orders: int
 
+
+class TransactionSummary(BaseModel):
+    id: UUID
+    order_number: int
+    created_at: datetime
+    total_amount: Decimal
+    payment_status: str
+    kitchen_status: str
+    payment_method: str | None = None
+
+class PaymentSummary(BaseModel):
+    date: str
+    payment_method: str
+    total_amount: Decimal
 
 FloorRequest.model_rebuild()
 FloorResponse.model_rebuild()

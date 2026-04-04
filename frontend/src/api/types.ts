@@ -108,6 +108,16 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface TransactionSummary {
+  id: string;
+  order_number: number;
+  created_at: string;
+  total_amount: number;
+  payment_status: string;
+  kitchen_status: string;
+  payment_method: string | null;
+}
+
 // Cart item type used only on the frontend
 export interface CartItem {
   product: Product;

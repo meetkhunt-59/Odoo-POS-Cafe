@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import Client, get_db
 from app.deps import get_current_user
 from app.schemas import (
-    SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, 
-    OrderPayRequest, OrderItemResponse, KitchenActionRequest
+    OrderPayRequest, OrderItemResponse, KitchenActionRequest,
+    TransactionSummary, PaymentSummary
 )
 from decimal import Decimal
+from collections import defaultdict
 
 router = APIRouter(prefix="/terminal", tags=["terminal"])
 
@@ -79,6 +80,64 @@ def pay_order(
     final_order = upd.data[0]
     final_order["items"] = []
     return final_order
+
+@router.get("/transactions", response_model=list[TransactionSummary])
+def get_transactions(
+    limit: int = 50,
+    offset: int = 0,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("orders")\
+        .select("*, payment_method:payment_methods(name)")\
+        .order("created_at", desc=True)\
+        .range(offset, offset + limit - 1)\
+        .execute()
+    
+    transactions = []
+    for order in res.data:
+        pm = order.get("payment_method")
+        pm_name = pm.get("name") if isinstance(pm, dict) else None
+        
+        transactions.append(TransactionSummary(
+            id=order["id"],
+            order_number=order["order_number"],
+            created_at=order["created_at"],
+            total_amount=order["total_amount"],
+            payment_status=order["payment_status"],
+            kitchen_status=order["kitchen_status"],
+            payment_method=pm_name
+        ))
+    return transactions
+
+@router.get("/payments/summary", response_model=list[PaymentSummary])
+def get_payment_summary(
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    # Fetch all paid orders
+    res = db.table("orders")\
+        .select("created_at, total_amount, payment_method:payment_methods(name)")\
+        .eq("payment_status", "paid")\
+        .execute()
+    
+    # Aggregate in python:
+    # Key: (date_str, method_name) -> total
+    agg = defaultdict(Decimal)
+    
+    for order in res.data:
+        date_str = order["created_at"].split("T")[0]
+        pm = order.get("payment_method")
+        pm_name = pm.get("name") if isinstance(pm, dict) else "Unknown"
+        agg[(date_str, pm_name)] += Decimal(str(order["total_amount"]))
+    
+    summaries = []
+    for (d, m), total in agg.items():
+        summaries.append(PaymentSummary(date=d, payment_method=m, total_amount=total))
+    
+    # Sort newest first
+    summaries.sort(key=lambda x: x.date, reverse=True)
+    return summaries
 
 @router.get("/display/kitchen")
 def get_kitchen_display(

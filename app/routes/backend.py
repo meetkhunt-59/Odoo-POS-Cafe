@@ -7,9 +7,55 @@ from app.schemas import (
     TableRequest, TableResponse, TableUpdate,
     PaymentMethodRequest, PaymentMethodResponse, PaymentMethodUpdate,
     ProductCreateRequest, ProductResponse, ProductVariantResponse, ProductUpdateRequest,
+    PointOfSaleRequest, PointOfSaleResponse, PointOfSaleUpdate,
 )
 
 router = APIRouter(prefix="/backend", tags=["backend"])
+
+# ─── POINT OF SALES ───────────────────────────────────────────
+
+@router.get("/pos", response_model=list[PointOfSaleResponse])
+def list_pos(
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("point_of_sales").select("*").order("created_at").execute()
+    return [PointOfSaleResponse(**p) for p in res.data]
+
+@router.post("/pos", response_model=PointOfSaleResponse)
+def create_pos(
+    payload: PointOfSaleRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    data = payload.model_dump()
+    res = db.table("point_of_sales").insert(data).execute()
+    if not res.data:
+        raise HTTPException(500, "Failed to create POS.")
+    return PointOfSaleResponse(**res.data[0])
+
+@router.put("/pos/{pos_id}", response_model=PointOfSaleResponse)
+def update_pos(
+    pos_id: str,
+    payload: PointOfSaleUpdate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True, mode='json')
+    res = db.table("point_of_sales").update(update_data).eq("id", pos_id).execute()
+    if not res.data:
+        raise HTTPException(404, "POS not found.")
+    return PointOfSaleResponse(**res.data[0])
+
+@router.delete("/pos/{pos_id}", status_code=204)
+def delete_pos(
+    pos_id: str,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    res = db.table("point_of_sales").delete().eq("id", pos_id).execute()
+    if not res.data:
+        raise HTTPException(404, "POS not found.")
 
 # ─── PRODUCT CATEGORIES ───────────────────────────────────────
 

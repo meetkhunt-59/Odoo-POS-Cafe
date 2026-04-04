@@ -20,6 +20,16 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Point of Sales
+CREATE TABLE IF NOT EXISTS public.point_of_sales (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  cash_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  upi_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  card_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Product Categories
 CREATE TABLE IF NOT EXISTS public.product_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -162,6 +172,7 @@ CREATE TRIGGER on_auth_user_created
 
 -- Enable RLS on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.point_of_sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_variants ENABLE ROW LEVEL SECURITY;
@@ -189,6 +200,11 @@ END $$;
 CREATE POLICY profiles_select_authenticated ON public.profiles FOR SELECT USING (true);
 CREATE POLICY profiles_manage_service ON public.profiles FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 CREATE POLICY profiles_update_self ON public.profiles FOR UPDATE USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- POINT OF SALES
+CREATE POLICY point_of_sales_select_auth ON public.point_of_sales FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY point_of_sales_insert_auth ON public.point_of_sales FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY point_of_sales_update_auth ON public.point_of_sales FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- PRODUCT CATEGORIES / PRODUCTS / VARIANTS (Read for all authenticated users)
 CREATE POLICY categories_select_auth ON public.product_categories FOR SELECT USING (auth.role() = 'authenticated');
@@ -221,6 +237,7 @@ CREATE POLICY self_order_tokens_select_auth ON public.self_order_tokens FOR SELE
 -- SERVICE ROLE BYPASS (Ensure backend keeps working with service role key)
 -- Note: Service role usually bypasses RLS, but these policies explicitly allow it for safety.
 CREATE POLICY everything_service_role ON public.profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY everything_service_role_pos ON public.point_of_sales FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY everything_service_role_cat ON public.product_categories FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY everything_service_role_prod ON public.products FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY everything_service_role_var ON public.product_variants FOR ALL TO service_role USING (true) WITH CHECK (true);
