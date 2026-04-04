@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Minus, Plus } from 'lucide-react';
-import type { Product } from '../api/mockData';
+import type { Product } from '../api/types';
+import { usePosStore } from '../store/posStore';
 import './Product.css';
 
 interface Props {
@@ -8,34 +9,56 @@ interface Props {
   onAdd: (product: Product) => void;
 }
 
+// Category → emoji mapping for visual flair
+const categoryIcons: Record<string, string> = {
+  'General': '🍽️',
+  'Breakfast': '🍳',
+  'Soups': '🥣',
+  'Pasta': '🍝',
+  'Main Course': '🍛',
+  'Burgers': '🍔',
+  'Drinks': '🥤',
+  'Desserts': '🍰',
+  'Starters': '🥗',
+  'Pizza': '🍕',
+  'Coffee': '☕',
+};
+
+function getCategoryIcon(category: string): string {
+  return categoryIcons[category] || '📦';
+}
+
 export default function ProductCard({ product, onAdd }: Props) {
-  const [qty, setQty] = useState(0);
+  const cart = usePosStore((s) => s.cart);
+  const updateCartQuantity = usePosStore((s) => s.updateCartQuantity);
+  const cartItem = cart.find((item) => item.product.id === product.id);
+  const qty = cartItem?.quantity || 0;
 
   const handleAdd = () => {
-    setQty(1);
     onAdd(product);
   };
 
-  const handleIncrement = () => setQty(q => q + 1);
-  const handleDecrement = () => setQty(q => Math.max(0, q - 1));
+  const handleIncrement = () => {
+    updateCartQuantity(product.id, qty + 1);
+  };
+
+  const handleDecrement = () => {
+    updateCartQuantity(product.id, qty - 1);
+  };
 
   return (
     <div className={`product-card ${qty > 0 ? 'selected' : ''}`}>
-      <div className="img-zone">
-        <img src={product.image} alt={product.name} loading="lazy" />
-        {product.discount && (
-          <div className="discount-badge">{product.discount}</div>
-        )}
+      <div className="img-zone product-icon-zone">
+        <span className="product-emoji">{getCategoryIcon(product.category)}</span>
       </div>
-      
+
       <div className="info-zone">
         <h3 className="product-name">{product.name}</h3>
-        
+
         <div className="price-row">
-          <span className="price">${product.price.toFixed(2)}</span>
+          <span className="price">₹{Number(product.price).toFixed(2)}</span>
           <div className="diet-badge">
-            <span className={`diet-dot ${product.isVeg ? 'veg' : 'non-veg'}`}></span>
-            {product.isVeg ? 'Veg' : 'Non Veg'}
+            <span className="category-label">{product.category}</span>
           </div>
         </div>
 

@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import Client, get_db
 from app.deps import get_current_user
-from app.schemas import SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, OrderPayRequest, OrderItemResponse
+from app.schemas import (
+    SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, 
+    OrderPayRequest, OrderItemResponse, KitchenActionRequest
+)
 from decimal import Decimal
 
 router = APIRouter(prefix="/terminal", tags=["terminal"])
@@ -82,8 +85,45 @@ def get_kitchen_display(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    res = db.table("orders").select("id, total_amount").eq("kitchen_status", "to_cook").execute()
-    return res.data
+    # Get all active orders that are not completed (or just for today)
+    res = db.table("orders").select("*, order_items(*)").neq("kitchen_status", "cancelled").order("created_at").execute()
+    orders = res.data
+    
+    # Enrich with products
+    for order in orders:
+        for item in order.get("order_items", []):
+            p_res = db.table("products").select("name").eq("id", item["product_id"]).execute()
+            if p_res.data:
+                item["product_name"] = p_res.data[0]["name"]
+                
+    return orders
+
+@router.patch("/orders/{order_id}/status", response_model=OrderResponse)
+def update_order_status(
+    order_id: str,
+    payload: KitchenActionRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    # Action mapping
+    status_map = {
+        "mark_preparing": "preparing",
+        "mark_completed": "completed",
+        "mark_cancelled": "cancelled"
+    }
+    new_status = status_map.get(payload.action)
+    if not new_status:
+        raise HTTPException(400, "Invalid kitchen action.")
+        
+    upd = db.table("orders").update({"kitchen_status": new_status}).eq("id", order_id).execute()
+    if not upd.data:
+        raise HTTPException(404, "Order not found.")
+        
+    final_order = upd.data[0]
+    # Fetch items for response model consistency
+    items_res = db.table("order_items").select("*").eq("order_id", order_id).execute()
+    final_order["items"] = items_res.data
+    return final_order
 
 @router.get("/display/customer/{order_id}")
 def get_customer_display(
@@ -91,7 +131,7 @@ def get_customer_display(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    res = db.table("orders").select("payment_status").eq("id", order_id).execute()
+    res = db.table("orders").select("*").eq("id", order_id).execute()
     if not res.data:
         raise HTTPException(status_code=404, detail="Display target order not found.")
     return res.data[0]

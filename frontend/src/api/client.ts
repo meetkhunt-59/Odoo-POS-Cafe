@@ -71,6 +71,15 @@ export async function createCategory(token: string, name: string): Promise<Produ
   return handleResponse<ProductCategory>(res);
 }
 
+export async function updateCategory(token: string, id: string, name: string): Promise<ProductCategory> {
+  const res = await fetch(`${API_BASE}/backend/product-categories/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<ProductCategory>(res);
+}
+
 // ── Products ─────────────────────────────────────────────────
 
 export async function listProducts(token: string): Promise<Product[]> {
@@ -98,6 +107,15 @@ export async function createProduct(
   return handleResponse<Product>(res);
 }
 
+export async function updateProduct(token: string, id: string, data: Partial<Product>): Promise<Product> {
+  const res = await fetch(`${API_BASE}/backend/products/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Product>(res);
+}
+
 export async function deleteProduct(token: string, productId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/backend/products/${productId}`, {
     method: 'DELETE',
@@ -116,6 +134,15 @@ export async function listFloors(token: string): Promise<Floor[]> {
 export async function createFloor(token: string, name: string): Promise<Floor> {
   const res = await fetch(`${API_BASE}/backend/floors`, {
     method: 'POST',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  return handleResponse<Floor>(res);
+}
+
+export async function updateFloor(token: string, id: string, name: string): Promise<Floor> {
+  const res = await fetch(`${API_BASE}/backend/floors/${id}`, {
+    method: 'PUT',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   });
@@ -149,6 +176,15 @@ export async function createTable(
   return handleResponse<Table>(res);
 }
 
+export async function updateTable(token: string, id: string, data: Partial<Table>): Promise<Table> {
+  const res = await fetch(`${API_BASE}/backend/tables/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return handleResponse<Table>(res);
+}
+
 export async function deleteTable(token: string, tableId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/backend/tables/${tableId}`, {
     method: 'DELETE',
@@ -172,6 +208,15 @@ export async function createPaymentMethod(
     method: 'POST',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+  return handleResponse<PaymentMethod>(res);
+}
+
+export async function updatePaymentMethod(token: string, id: string, data: Partial<PaymentMethod>): Promise<PaymentMethod> {
+  const res = await fetch(`${API_BASE}/backend/payment-methods/${id}`, {
+    method: 'PUT',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
   });
   return handleResponse<PaymentMethod>(res);
 }

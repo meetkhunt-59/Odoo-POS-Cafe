@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import Client, get_db
 from app.deps import get_current_user
 from app.schemas import (
-    CategoryRequest, CategoryResponse,
-    FloorRequest, FloorResponse,
-    TableRequest, TableResponse,
-    PaymentMethodRequest, PaymentMethodResponse,
-    ProductCreateRequest, ProductResponse, ProductVariantResponse,
+    CategoryRequest, CategoryResponse, CategoryUpdate,
+    FloorRequest, FloorResponse, FloorUpdate,
+    TableRequest, TableResponse, TableUpdate,
+    PaymentMethodRequest, PaymentMethodResponse, PaymentMethodUpdate,
+    ProductCreateRequest, ProductResponse, ProductVariantResponse, ProductUpdateRequest,
 )
 
 router = APIRouter(prefix="/backend", tags=["backend"])
@@ -42,6 +42,21 @@ def create_category(
         raise HTTPException(500, "Failed to create category.")
     c = res.data[0]
     return CategoryResponse(id=c["id"], name=c["name"], send_to_kitchen=c.get("send_to_kitchen", True), product_count=0)
+
+
+@router.put("/product-categories/{cat_id}", response_model=CategoryResponse)
+def update_category(
+    cat_id: str,
+    payload: CategoryUpdate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+    res = db.table("product_categories").update(update_data).eq("id", cat_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Category not found.")
+    c = res.data[0]
+    return CategoryResponse(id=c["id"], name=c["name"], send_to_kitchen=c.get("send_to_kitchen", True))
 
 
 # ─── PRODUCTS ─────────────────────────────────────────────────
@@ -138,6 +153,28 @@ def create_product(
     )
 
 
+@router.put("/products/{product_id}", response_model=ProductResponse)
+def update_product(
+    product_id: str,
+    payload: ProductUpdateRequest,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+    if "category" in update_data:
+        cat_name = update_data.pop("category")
+        cat_res = db.table("product_categories").select("id").eq("name", cat_name).execute()
+        if cat_res.data:
+            update_data["category_id"] = cat_res.data[0]["id"]
+
+    res = db.table("products").update(update_data).eq("id", product_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Product not found.")
+    
+    # Return enriched response
+    return list_products(db, current)[0] # Simplified refresh for response
+
+
 @router.delete("/products/{product_id}", status_code=204)
 def delete_product(
     product_id: str,
@@ -177,6 +214,20 @@ def create_floor(
     res = db.table("floors").insert({"name": payload.name}).execute()
     if not res.data:
         raise HTTPException(500, "Failed to create floor.")
+    return FloorResponse(**res.data[0])
+
+
+@router.put("/floors/{floor_id}", response_model=FloorResponse)
+def update_floor(
+    floor_id: str,
+    payload: FloorUpdate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+    res = db.table("floors").update(update_data).eq("id", floor_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Floor not found.")
     return FloorResponse(**res.data[0])
 
 
@@ -221,6 +272,20 @@ def create_table(
     return TableResponse(**res.data[0])
 
 
+@router.put("/tables/{table_id}", response_model=TableResponse)
+def update_table(
+    table_id: str,
+    payload: TableUpdate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+    res = db.table("tables").update(update_data).eq("id", table_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Table not found.")
+    return TableResponse(**res.data[0])
+
+
 @router.delete("/tables/{table_id}", status_code=204)
 def delete_table(
     table_id: str,
@@ -258,6 +323,20 @@ def create_payment_method(
     res = db.table("payment_methods").insert(data).execute()
     if not res.data:
         raise HTTPException(500, "Failed to create payment method.")
+    return PaymentMethodResponse(**res.data[0])
+
+
+@router.put("/payment-methods/{pm_id}", response_model=PaymentMethodResponse)
+def update_payment_method(
+    pm_id: str,
+    payload: PaymentMethodUpdate,
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+    res = db.table("payment_methods").update(update_data).eq("id", pm_id).execute()
+    if not res.data:
+        raise HTTPException(404, "Payment method not found.")
     return PaymentMethodResponse(**res.data[0])
 
 

@@ -57,6 +57,16 @@ class ProductVariantResponse(BaseModel):
     value: str
     extra_price: Decimal
 
+class ProductUpdateRequest(BaseModel):
+    name: str | None = None
+    category: str | None = None
+    price: Decimal | None = Field(None, gt=0)
+    unit: str | None = None
+    tax: Decimal | None = None
+    description: str | None = None
+    send_to_kitchen: bool | None = None
+    is_active: bool | None = None
+
 
 class ProductResponse(BaseModel):
     id: UUID
@@ -74,9 +84,16 @@ class ProductResponse(BaseModel):
 class FloorRequest(BaseModel):
     name: str
 
+class FloorUpdate(BaseModel):
+    name: str | None = None
+
 
 class CategoryRequest(BaseModel):
     name: str
+
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    send_to_kitchen: bool | None = None
 
 
 class CategoryResponse(BaseModel):
@@ -99,6 +116,13 @@ class TableRequest(BaseModel):
     is_active: bool = True
     appointment_resource: bool = False
 
+class TableUpdate(BaseModel):
+    floor_id: UUID | None = None
+    table_number: str | None = None
+    seats: int | None = Field(None, ge=1)
+    is_active: bool | None = None
+    appointment_resource: bool | None = None
+
 
 class TableResponse(BaseModel):
     id: UUID
@@ -113,6 +137,12 @@ class PaymentMethodRequest(BaseModel):
     type: str
     name: str
     is_enabled: bool = True
+    upi_id: str | None = None
+
+class PaymentMethodUpdate(BaseModel):
+    name: str | None = None
+    type: str | None = None
+    is_enabled: bool | None = None
     upi_id: str | None = None
 
 

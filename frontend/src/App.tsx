@@ -1,17 +1,41 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+
+import LoginPage from './pages/LoginPage';
 import POSPage from './pages/POSPage';
 import KitchenPage from './pages/KitchenPage';
+import BackendPage from './pages/BackendPage';
+import CustomerPage from './pages/CustomerPage';
+
+// Auth guard component
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const token = useAuthStore((s) => s.token);
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 function App() {
+  const { token, fetchProfile } = useAuthStore();
+
+  useEffect(() => {
+    if (token) fetchProfile();
+  }, [token]);
+
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/pos" replace />} />
-      <Route path="/pos/*" element={<POSPage />} />
-      <Route path="/pos/delivery" element={<KitchenPage />} /> {/* Placeholder to show another view */}
-      <Route path="/admin/*" element={
-        <div style={{ padding: 40, textAlign: 'center' }}><h2>Admin Backend Context Placeholder</h2></div>
-      } />
+      {/* Public routes */}
+      <Route path="/login" element={token ? <Navigate to="/pos" replace /> : <LoginPage />} />
+
+      {/* Protected routes */}
+      <Route path="/pos/*" element={<RequireAuth><POSPage /></RequireAuth>} />
+      <Route path="/pos/delivery" element={<RequireAuth><KitchenPage /></RequireAuth>} />
+      <Route path="/admin/backend" element={<RequireAuth><BackendPage /></RequireAuth>} />
+      <Route path="/customer/:orderId" element={<CustomerPage />} />
+
+      {/* Default redirect */}
+      <Route path="/" element={<Navigate to={token ? '/pos' : '/login'} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

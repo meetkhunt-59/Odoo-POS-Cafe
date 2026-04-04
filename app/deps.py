@@ -18,11 +18,15 @@ def get_now_utc() -> datetime:
 
 def get_current_user(db: Client = Depends(get_db), token: str = Depends(oauth2_scheme)) -> dict:
     try:
+        # print(f"DEBUG: Decoding token: {token[:10]}... with secret: {settings.secret_key[:5]}...")
         payload = decode_token(token)
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    except Exception as e:
+        print(f"DEBUG: Token decode failed: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {str(e)}")
+    
     user_id = payload.get("sub")
     if not user_id:
+        print("DEBUG: Token subject missing")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject")
 
     try:

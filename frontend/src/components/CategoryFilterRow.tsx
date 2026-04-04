@@ -1,9 +1,15 @@
 import React from 'react';
 import './CategoryFilterRow.css';
-import type { Category } from '../api/mockData';
+
+export interface CategoryFilter {
+  id: string;
+  name: string;
+  icon: string;
+  itemCount: number;
+}
 
 interface Props {
-  categories: Category[];
+  categories: CategoryFilter[];
   selectedId: string;
   onSelect: (id: string) => void;
 }
@@ -13,8 +19,8 @@ export default function CategoryFilterRow({ categories, selectedId, onSelect }: 
     <div className="category-scroll-container">
       <div className="category-row">
         {categories.map((cat) => (
-          <button 
-            key={cat.id} 
+          <button
+            key={cat.id}
             className={`category-card ${selectedId === cat.id ? 'active' : ''}`}
             onClick={() => onSelect(cat.id)}
           >
