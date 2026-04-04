@@ -129,6 +129,10 @@ export interface Customer {
   name: string;
   phone: string | null;
   email: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
   total_sales: number;
   created_at: string;
 }

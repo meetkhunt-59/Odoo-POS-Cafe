@@ -307,7 +307,7 @@ export async function getCustomers(token: string, search: string = '', limit: nu
   return handleResponse<Customer[]>(res);
 }
 
-export async function createCustomer(token: string, data: { name: string; phone?: string; email?: string }): Promise<Customer> {
+export async function createCustomer(token: string, data: { name: string; phone?: string; email?: string; address?: string; city?: string; state?: string; country?: string }): Promise<Customer> {
   const res = await fetch(`${API_BASE}/terminal/customers`, {
     method: 'POST',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },

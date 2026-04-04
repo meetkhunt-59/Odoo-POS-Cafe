@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { getCustomers, createCustomer } from '../api/client';
 import type { Customer } from '../api/types';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Search, Plus, User, Phone, Mail, Loader2, X } from 'lucide-react';
 import './TransactionsPage.css';
 import './CustomersPage.css';
 
 export default function CustomersPage() {
+  const navigate = useNavigate();
   const token = useAuthStore(s => s.token);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,13 +18,6 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [offset, setOffset] = useState(0);
   const limit = 50;
-
-  // Add Modal State
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -57,35 +52,13 @@ export default function CustomersPage() {
     fetchData(newOffset, search);
   };
 
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    
-    setAdding(true);
-    try {
-      const newC = await createCustomer(token!, {
-        name: newName,
-        phone: newPhone || undefined,
-        email: newEmail || undefined
-      });
-      // Add securely to front of list
-      setCustomers(prev => [newC, ...prev]);
-      setShowAddModal(false);
-      setNewName(''); setNewPhone(''); setNewEmail('');
-    } catch (err) {
-      console.error("Failed to add customer", err);
-    } finally {
-      setAdding(false);
-    }
-  };
-
   return (
     <div className="pos-dashboard-root transactions-page">
       <DashboardNavbar />
       <main className="pos-dashboard-main">
         <div className="transactions-header customers-header-flex">
           <h1 className="header-title">Customer Directory</h1>
-          <button className="btn-add-customer" onClick={() => setShowAddModal(true)}>
+          <button className="btn-add-customer" onClick={() => navigate('/customers/new')}>
             <Plus size={16} /> New Customer
           </button>
         </div>
@@ -161,55 +134,6 @@ export default function CustomersPage() {
           )}
         </div>
       </main>
-
-      {/* Add Customer Modal */}
-      {showAddModal && (
-        <div className="modal-overlay">
-          <div className="customer-modal slide-down">
-            <div className="modal-header">
-              <h2>Add New Customer</h2>
-              <button className="btn-close" onClick={() => setShowAddModal(false)}><X size={20}/></button>
-            </div>
-            <form onSubmit={handleAddSubmit} className="modal-body">
-              <div className="form-group">
-                <label>Full Name *</label>
-                <input 
-                  type="text" 
-                  value={newName} 
-                  onChange={e => setNewName(e.target.value)} 
-                  placeholder="e.g. John Doe"
-                  required 
-                  autoFocus
-                />
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input 
-                  type="text" 
-                  value={newPhone} 
-                  onChange={e => setNewPhone(e.target.value)} 
-                  placeholder="+1 (555) 000-0000"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email Address</label>
-                <input 
-                  type="email" 
-                  value={newEmail} 
-                  onChange={e => setNewEmail(e.target.value)} 
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn-cancel" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className="btn-submit" disabled={adding || !newName.trim()}>
-                  {adding ? <Loader2 className="spinner" size={16} /> : 'Save Customer'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
