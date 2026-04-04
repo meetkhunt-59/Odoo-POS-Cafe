@@ -11,6 +11,7 @@ import type {
   OrderItemInput,
   PointOfSale,
   TransactionSummary,
+  PaymentSummary,
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -290,6 +291,11 @@ export async function payOrder(token: string, orderId: string, paymentMethodId: 
 export async function getTransactions(token: string, limit: number = 50, offset: number = 0): Promise<TransactionSummary[]> {
   const res = await fetch(`${API_BASE}/terminal/transactions?limit=${limit}&offset=${offset}`, { headers: authHeaders(token) });
   return handleResponse<TransactionSummary[]>(res);
+}
+
+export async function getPaymentSummary(token: string): Promise<PaymentSummary[]> {
+  const res = await fetch(`${API_BASE}/terminal/payments/summary`, { headers: authHeaders(token) });
+  return handleResponse<PaymentSummary[]>(res);
 }
 
 // ── Kitchen Display ──────────────────────────────────────────

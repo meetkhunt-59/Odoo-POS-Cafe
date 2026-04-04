@@ -118,6 +118,12 @@ export interface TransactionSummary {
   payment_method: string | null;
 }
 
+export interface PaymentSummary {
+  date: string;
+  payment_method: string;
+  total_amount: number;
+}
+
 // Cart item type used only on the frontend
 export interface CartItem {
   product: Product;
