@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from supabase import Client
 
-from app.db import get_db
+from app.db import get_db, get_auth_client
 from app.deps import admin_exists, get_current_user
 from app.schemas import ProfilePublic, SignupRequest, TokenResponse
 
@@ -13,12 +13,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def signup(
     payload: SignupRequest,
     db: Client = Depends(get_db),
+    auth_client: Client = Depends(get_auth_client),
 ):
     if admin_exists(db):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Signup disabled; ask admin to create users")
 
     try:
-        sess = db.auth.sign_up(
+        sess = auth_client.auth.sign_up(
             {
                 "email": payload.email, 
                 "password": payload.password, 
@@ -43,10 +44,10 @@ def signup(
 @router.post("/login", response_model=TokenResponse)
 def login(
     form: OAuth2PasswordRequestForm = Depends(),
-    db: Client = Depends(get_db),
+    auth_client: Client = Depends(get_auth_client),
 ):
     try:
-        sess = db.auth.sign_in_with_password({"email": form.username, "password": form.password})
+        sess = auth_client.auth.sign_in_with_password({"email": form.username, "password": form.password})
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     
