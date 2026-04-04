@@ -59,6 +59,24 @@ export async function getMe(token: string): Promise<Profile> {
   return handleResponse<Profile>(res);
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/request-reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function updatePassword(email: string, otp: string, new_password: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/update-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, otp, new_password }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 // ── Point of Sales ───────────────────────────────────────────
 
 export async function listPointOfSales(token: string): Promise<PointOfSale[]> {
@@ -374,4 +392,15 @@ export async function createPublicOrder(token: string, payload: any): Promise<Or
     body: JSON.stringify(payload),
   });
   return handleResponse<Order>(res);
+}
+// ── Dashboard ────────────────────────────────────────────────
+
+export async function fetchDashboardStats(token: string, period: string = 'all'): Promise<any> {
+  const params = new URLSearchParams();
+  if (period !== 'all') {
+    params.set('period', period);
+  }
+  const url = `${API_BASE}/backend/dashboard/stats${params.toString() ? '?' + params.toString() : ''}`;
+  const res = await fetch(url, { headers: authHeaders(token) });
+  return handleResponse<any>(res);
 }

@@ -1,11 +1,4 @@
-.env
-*.db
-.venv/
-__pycache__/
-.pytest_cache/
-.ruff_cache/
-
-# Node / Frontend
+# Node
 node_modules/
 dist/
 dist-ssr/
@@ -14,3 +7,7 @@ build/
 env/
 docs/
 .agent/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class

@@ -17,7 +17,7 @@ export default function CustomerDisplayPage() {
     <div className="cfd-container">
       <div className="cfd-main">
         <header className="cfd-header">
-           <div className="brand">CHILI POS 🌿</div>
+           <div className="brand">Odoo POS Cafe 🌿</div>
            <div className="table-info">
              {selectedTable ? `Table ${selectedTable.table_number}` : 'Welcome!'}
            </div>

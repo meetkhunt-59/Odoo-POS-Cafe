@@ -27,7 +27,7 @@ export default function Sidebar() {
       {/* Logo Zone */}
       <div className="logo-zone">
         <div className="logo-icon" onClick={toggleSidebar} style={{ cursor: 'pointer' }}>🌿</div>
-        {!isSidebarCollapsed && <div className="brand-name">CHILI POS</div>}
+        {!isSidebarCollapsed && <div className="brand-name">Odoo POS Cafe</div>}
       </div>
 
       {/* Nav Items */}

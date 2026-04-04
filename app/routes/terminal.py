@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.db import Client, get_db
 from app.deps import get_current_user
 from app.schemas import (
-    SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse, 
+    SessionOpenRequest, SessionSummary, OrderCreateRequest, OrderResponse,
     OrderPayRequest, OrderItemResponse, KitchenActionRequest,
     TransactionSummary, PaymentSummary, CustomerCreate, CustomerResponse
 )

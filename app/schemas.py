@@ -39,6 +39,14 @@ class SignupRequest(BaseModel):
     password: constr(min_length=6, max_length=128)
     name: constr(min_length=1, max_length=120)
 
+class RequestResetRequest(BaseModel):
+    email: constr(min_length=3, max_length=320)
+
+class UpdatePasswordRequest(BaseModel):
+    email: constr(min_length=3, max_length=320)
+    otp: constr(min_length=6, max_length=6)
+    new_password: constr(min_length=6, max_length=128)
+
 
 class ProfilePublic(BaseModel):
     id: UUID
@@ -302,6 +310,41 @@ class CustomerResponse(BaseModel):
     country: str | None = None
     total_sales: Decimal
     created_at: datetime
+class DashboardKPIRes(BaseModel):
+    total_orders: int
+    revenue: Decimal
+    average_order: Decimal
+
+class ChartDataPoint(BaseModel):
+    name: str
+    sales: Decimal | float
+    
+class PieDataPoint(BaseModel):
+    name: str
+    value: Decimal | float
+
+class TopProductRow(BaseModel):
+    name: str
+    sold: int
+
+class TopCategoryRow(BaseModel):
+    name: str
+    percentage: str
+
+class TopOrderRow(BaseModel):
+    order_number: str
+    date: str
+    items: int
+    total: Decimal
+    status: str
+
+class DashboardStatsResponse(BaseModel):
+    kpis: DashboardKPIRes
+    line_chart: list[ChartDataPoint]
+    pie_chart: list[PieDataPoint]
+    top_products: list[TopProductRow]
+    top_categories: list[TopCategoryRow]
+    top_orders: list[TopOrderRow]
 
 FloorRequest.model_rebuild()
 FloorResponse.model_rebuild()

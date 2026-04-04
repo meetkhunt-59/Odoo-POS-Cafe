@@ -111,7 +111,7 @@ export default function CustomerPage() {
             <span>Total Amount</span>
             <span className="total-val">₹{Number(order.total_amount).toFixed(2)}</span>
           </div>
-          <p className="thank-you">Thank you for dining with CHILI POS! 🌿</p>
+          <p className="thank-you">Thank you for dining with Odoo POS Cafe! 🌿</p>
         </div>
       </div>
     </div>

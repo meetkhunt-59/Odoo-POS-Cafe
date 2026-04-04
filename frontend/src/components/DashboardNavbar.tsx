@@ -108,7 +108,7 @@ export default function DashboardNavbar() {
           
           {activeDropdown === 'reporting' && (
             <div className="dashboard-dropdown-menu">
-              <button onClick={() => handleNavigate('/')}>Dashboard</button>
+              <button onClick={() => handleNavigate('/admin/reporting')}>Dashboard</button>
             </div>
           )}
         </div>

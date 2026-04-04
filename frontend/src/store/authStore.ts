@@ -12,6 +12,8 @@ interface AuthState {
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
+  requestReset: (email: string) => Promise<void>;
+  updatePassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
   setSidebarCollapsed: (v: boolean) => void;
@@ -61,6 +63,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch {
       // Token might be expired
       get().logout();
+    }
+  },
+
+  requestReset: async (email: string) => {
+    set({ loading: true, error: '' });
+    try {
+      await api.requestPasswordReset(email);
+      set({ loading: false });
+    } catch (err: any) {
+      set({ loading: false, error: err.message || 'Failed to send reset email' });
+      throw err;
+    }
+  },
+
+  updatePassword: async (email: string, otp: string, newPassword: string) => {
+    set({ loading: true, error: '' });
+    try {
+      await api.updatePassword(email, otp, newPassword);
+      set({ loading: false });
+    } catch (err: any) {
+      set({ loading: false, error: err.message || 'Failed to update password' });
+      throw err;
     }
   },
 
