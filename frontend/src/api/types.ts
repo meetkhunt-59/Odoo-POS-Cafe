@@ -14,6 +14,15 @@ export interface Profile {
   created_at: string;
 }
 
+export interface PointOfSale {
+  id: string;
+  name: string;
+  cash_enabled: boolean;
+  upi_enabled: boolean;
+  card_enabled: boolean;
+  created_at?: string;
+}
+
 export interface ProductVariant {
   id: string;
   attribute: string;

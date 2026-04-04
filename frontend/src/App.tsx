@@ -11,6 +11,7 @@ import FloorSelectionPage from './pages/FloorSelectionPage';
 import CustomerDisplayPage from './pages/CustomerDisplayPage';
 import DashboardPage from './pages/DashboardPage';
 import PaymentPage from './pages/PaymentPage';
+import SettingsPage from './pages/SettingsPage';
 
 // Auth guard component
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ function App() {
       <Route path="/pos/tables" element={<RequireAuth><FloorSelectionPage /></RequireAuth>} />
       <Route path="/pos/kitchen" element={<RequireAuth><KitchenPage /></RequireAuth>} />
       <Route path="/admin/backend" element={<RequireAuth><BackendPage /></RequireAuth>} />
+      <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
       <Route path="/pos/customer-display" element={<RequireAuth><CustomerDisplayPage /></RequireAuth>} />
       <Route path="/pos/payment" element={<RequireAuth><PaymentPage /></RequireAuth>} />
       <Route path="/customer/:orderId" element={<CustomerPage />} />

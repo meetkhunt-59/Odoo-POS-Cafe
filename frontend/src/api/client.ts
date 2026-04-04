@@ -9,6 +9,7 @@ import type {
   SessionSummary,
   Order,
   OrderItemInput,
+  PointOfSale,
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -53,6 +54,25 @@ export async function login(email: string, password: string): Promise<TokenRespo
 export async function getMe(token: string): Promise<Profile> {
   const res = await fetch(`${API_BASE}/auth/me`, { headers: authHeaders(token) });
   return handleResponse<Profile>(res);
+}
+
+// ── Point of Sales ───────────────────────────────────────────
+
+export async function listPointOfSales(token: string): Promise<PointOfSale[]> {
+  const res = await fetch(`${API_BASE}/backend/pos`, { headers: authHeaders(token) });
+  return handleResponse<PointOfSale[]>(res);
+}
+
+export async function createPointOfSale(
+  token: string,
+  payload: { name: string; cash_enabled: boolean; upi_enabled: boolean; card_enabled: boolean }
+): Promise<PointOfSale> {
+  const res = await fetch(`${API_BASE}/backend/pos`, {
+    method: 'POST',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<PointOfSale>(res);
 }
 
 // ── Product Categories ───────────────────────────────────────
