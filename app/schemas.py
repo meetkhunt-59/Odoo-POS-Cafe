@@ -79,6 +79,13 @@ class CategoryRequest(BaseModel):
     name: str
 
 
+class CategoryResponse(BaseModel):
+    id: UUID
+    name: str
+    send_to_kitchen: bool = True
+    product_count: int = 0
+
+
 class FloorResponse(BaseModel):
     id: UUID
     name: str
