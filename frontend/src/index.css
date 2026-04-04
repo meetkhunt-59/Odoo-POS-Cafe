@@ -1,24 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700&display=swap');
 
 :root {
-  --primary:        #2A7C4F;   /* Deep forest green — CTAs, active states */
-  --primary-light:  #EAF5EE;   /* Pale green — selected card bg, active nav bg */
-  --primary-mid:    #5DB87A;   /* Mid green — hover accents, icons */
-  --accent-green:   #4CAF72;   /* Price text, veg badge */
-  --accent-red:     #E84040;   /* Non-veg badge dot */
-  --badge-gold:     #F5A623;   /* Discount badge ("20% Off") */
-
-  --bg-app:         #F4F6F4;   /* Entire app background — very light warm gray */
-  --bg-card:        #FFFFFF;   /* All cards, panels */
-  --bg-sidebar:     #FFFFFF;   /* Sidebar is white, not dark */
-
-  --text-primary:   #1A1A1A;   /* Headings, item names */
-  --text-secondary: #6B7280;   /* Subtitles, waiter name, table meta */
-  --text-price:     #2A7C4F;   /* Always green */
-
-  --border:         #E8EDE8;   /* Subtle card/panel borders */
-  --shadow:         0 2px 8px rgba(0,0,0,0.06);
-  --shadow-selected: 0 0 0 2px var(--primary), 0 4px 12px rgba(42,124,79,0.15);
+  /* Premium Odoo Palette */
+  --primary:        #5D4057;   /* Sophisticated Mauve/Purple */
+  --primary-light:  #F5F0F5;   /* Very light mauve for backgrounds */
+  --accent-orange:  #FF8F00;   /* Vibrant but balanced orange */
+  
+  --bg-app:         #F9FAFB;   /* Clean modern grey-white */
+  --bg-card:        #FFFFFF;
+  --text-primary:   #111827;   /* Near black for readability */
+  --text-secondary: #4B5563;   /* Slate grey for subtext */
+  
+  --border-light:   #E5E7EB;
+  --border-strong:  #6B7280;
 }
 
 * {
@@ -28,24 +22,23 @@
 }
 
 body {
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: var(--bg-app);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
 }
 
-/* Base layouts */
-.h-screen { height: 100vh; }
-.w-full { width: 100%; }
-
 button, input {
-  font-family: inherit;
+  font-family: 'Inter', sans-serif;
   border: none;
   background: none;
 }
+
 button {
   cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-button:focus, input:focus {
-  outline: none;
-}
+
+.h-screen { height: 100vh; }
+.w-full { width: 100%; }

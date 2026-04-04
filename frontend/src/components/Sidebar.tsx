@@ -1,20 +1,14 @@
-import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Coffee, Calendar, Truck, Layers, Settings, LogOut } from 'lucide-react';
+import { Layers, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import './Sidebar.css';
 
 export default function Sidebar() {
-  const profile = useAuthStore((s) => s.profile);
-  const logout = useAuthStore((s) => s.logout);
+  const { profile, logout, isSidebarCollapsed, toggleSidebar } = useAuthStore();
   const navigate = useNavigate();
 
   const navItems = [
-    { icon: Home, label: 'Menu', to: '/pos' },
     { icon: Layers, label: 'Product Management', to: '/admin/backend' },
-    { icon: Coffee, label: 'Table Services', to: '/pos/tables' },
-    { icon: Calendar, label: 'Reservation', to: '/pos/reservations' },
-    { icon: Truck, label: 'Kitchen', to: '/pos/delivery' },
     { icon: Settings, label: 'Settings', to: '/admin/settings' },
   ];
 
@@ -29,11 +23,11 @@ export default function Sidebar() {
     : '??';
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
       {/* Logo Zone */}
       <div className="logo-zone">
-        <div className="logo-icon">🌿</div>
-        <div className="brand-name">CHILI POS</div>
+        <div className="logo-icon" onClick={toggleSidebar} style={{ cursor: 'pointer' }}>🌿</div>
+        {!isSidebarCollapsed && <div className="brand-name">CHILI POS</div>}
       </div>
 
       {/* Nav Items */}
@@ -43,9 +37,10 @@ export default function Sidebar() {
             key={item.label}
             to={item.to}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title={item.label}
           >
             <item.icon size={24} className="nav-icon" />
-            <span>{item.label}</span>
+            {!isSidebarCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
       </nav>
@@ -54,11 +49,11 @@ export default function Sidebar() {
       <div className="bottom-zone">
         <div className="user-avatar">
           <div className="avatar-circle">{initials}</div>
-          <span className="user-name">{profile?.name || 'Loading...'}</span>
+          {!isSidebarCollapsed && <span className="user-name">{profile?.name || 'Loading...'}</span>}
         </div>
         <button className="logout-btn" onClick={handleLogout}>
           <LogOut size={20} />
-          <span>Logout</span>
+          {!isSidebarCollapsed && <span>Logout</span>}
         </button>
       </div>
     </aside>

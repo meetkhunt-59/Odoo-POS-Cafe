@@ -12,7 +12,9 @@ interface AuthState {
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
-  setToken: (token: string) => void;
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: (v: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -62,8 +64,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  setToken: (token) => {
+  setToken: (token: string) => {
     localStorage.setItem('pos_token', token);
     set({ token });
+  },
+
+  isSidebarCollapsed: localStorage.getItem('sidebar_collapsed') === 'true',
+  toggleSidebar: () => {
+    const next = !get().isSidebarCollapsed;
+    localStorage.setItem('sidebar_collapsed', String(next));
+    set({ isSidebarCollapsed: next });
+  },
+  setSidebarCollapsed: (v) => {
+    localStorage.setItem('sidebar_collapsed', String(v));
+    set({ isSidebarCollapsed: v });
   },
 }));

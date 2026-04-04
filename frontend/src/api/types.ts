@@ -102,5 +102,6 @@ export interface Order {
 // Cart item type used only on the frontend
 export interface CartItem {
   product: Product;
+  variant?: ProductVariant | null;
   quantity: number;
 }

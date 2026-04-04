@@ -39,6 +39,8 @@ interface PosState {
   // Actions — selection
   selectTable: (tableId: string | null) => void;
   selectPaymentMethod: (pmId: string | null) => void;
+  resetForNewCustomer: () => void;
+  clearCartOnly: () => void;
 }
 
 export const usePosStore = create<PosState>((set, get) => ({
@@ -138,4 +140,6 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   selectTable: (tableId) => set({ selectedTableId: tableId }),
   selectPaymentMethod: (pmId) => set({ selectedPaymentMethodId: pmId }),
+  resetForNewCustomer: () => set({ cart: [], selectedTableId: null, selectedPaymentMethodId: null }),
+  clearCartOnly: () => set({ cart: [] }),
 }));

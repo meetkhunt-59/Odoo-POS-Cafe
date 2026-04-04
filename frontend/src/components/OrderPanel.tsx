@@ -1,25 +1,27 @@
-import React from 'react';
-import { Edit2, Banknote, CreditCard, QrCode, Minus, Plus, Trash2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Edit2, Minus, Plus, Trash2 } from 'lucide-react';
 import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
+import PaymentSuccessOverlay from './PaymentSuccessOverlay';
 import './OrderPanel.css';
 
 export default function OrderPanel() {
+  const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
   const profile = useAuthStore((s) => s.profile);
   const {
     cart,
     updateCartQuantity,
     removeFromCart,
-    clearCart,
-    paymentMethods,
-    selectedPaymentMethodId,
-    selectPaymentMethod,
+    clearCartOnly,
     selectedTableId,
     session,
     tables,
   } = usePosStore();
+
+  const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
 
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
   const taxRate = cart.length > 0
@@ -30,7 +32,7 @@ export default function OrderPanel() {
 
   const selectedTable = tables.find((t) => t.id === selectedTableId);
 
-  const handlePlaceOrder = async () => {
+  const handleSendToKitchen = async () => {
     if (!token || !session || cart.length === 0) return;
     try {
       const order = await api.createOrder(token, {
@@ -38,21 +40,18 @@ export default function OrderPanel() {
         table_id: selectedTableId,
         items: cart.map((item) => ({
           product_id: item.product.id,
+          variant_id: item.variant?.id, // Support variants
           quantity: item.quantity,
         })),
       });
-
-      // If payment method selected, pay immediately
-      if (selectedPaymentMethodId) {
-        await api.payOrder(token, order.id, selectedPaymentMethodId);
-      }
-
-      clearCart();
-      alert(`Order #${order.order_number} placed successfully!`);
+      
+      clearCartOnly(); // Isolated dispatch: clear cart but keep table
+      alert(`Order #${order.order_number} sent to kitchen!`);
     } catch (err: any) {
-      alert(`Order failed: ${err.message}`);
+      alert(`Failed to send order: ${err.message}`);
     }
   };
+
 
   return (
     <aside className="order-panel">
@@ -137,38 +136,36 @@ export default function OrderPanel() {
         </div>
       </div>
 
-      {/* Payment Method Row */}
-      <div className="payment-methods">
-        {paymentMethods.length > 0 ? (
-          paymentMethods.map((pm) => (
-            <button
-              key={pm.id}
-              className={`payment-card ${selectedPaymentMethodId === pm.id ? 'active' : ''}`}
-              onClick={() => selectPaymentMethod(pm.id)}
-            >
-              {pm.type === 'cash' ? <Banknote size={24} /> : pm.type === 'upi' ? <QrCode size={24} /> : <CreditCard size={24} />}
-              <span>{pm.name}</span>
-            </button>
-          ))
-        ) : (
-          <>
-            <button className="payment-card" disabled><Banknote size={24} /><span>Cash</span></button>
-            <button className="payment-card" disabled><CreditCard size={24} /><span>Card</span></button>
-            <button className="payment-card" disabled><QrCode size={24} /><span>QR</span></button>
-          </>
-        )}
-      </div>
+      {/* Payment Method Row removed from sidebar - now in overlay */}
 
-      {/* Place Order CTA */}
-      <div className="cta-container">
+      {/* Action Buttons: Split Flow */}
+      <div className="cta-container dual-actions">
         <button
-          className="place-order-btn"
-          onClick={handlePlaceOrder}
+          className="send-kitchen-btn"
+          onClick={handleSendToKitchen}
           disabled={cart.length === 0 || !session}
         >
-          {!session ? 'Open Session First' : cart.length === 0 ? 'Add items to order' : `Place Order — ₹${total.toFixed(2)}`}
+          Send to Kitchen
+        </button>
+        <button
+          className="pay-btn"
+          onClick={() => navigate('/pos/payment')}
+          disabled={cart.length === 0 || !session}
+        >
+          {cart.length === 0 ? 'Select Items' : `Checkout — ₹${total.toFixed(2)}`}
         </button>
       </div>
+
+      {successOrder && (
+        <PaymentSuccessOverlay 
+          orderNumber={successOrder.number}
+          total={successOrder.total}
+          onClose={() => {
+            setSuccessOrder(null);
+            navigate('/pos/tables'); // Auto-return to Floor mapping
+          }}
+        />
+      )}
     </aside>
   );
 }

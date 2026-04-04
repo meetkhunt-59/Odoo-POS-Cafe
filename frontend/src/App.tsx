@@ -7,6 +7,10 @@ import POSPage from './pages/POSPage';
 import KitchenPage from './pages/KitchenPage';
 import BackendPage from './pages/BackendPage';
 import CustomerPage from './pages/CustomerPage';
+import FloorSelectionPage from './pages/FloorSelectionPage';
+import CustomerDisplayPage from './pages/CustomerDisplayPage';
+import DashboardPage from './pages/DashboardPage';
+import PaymentPage from './pages/PaymentPage';
 
 // Auth guard component
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -25,16 +29,19 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/login" element={token ? <Navigate to="/pos" replace /> : <LoginPage />} />
+      <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
 
       {/* Protected routes */}
+      <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
+      <Route path="/pos/tables" element={<RequireAuth><FloorSelectionPage /></RequireAuth>} />
       <Route path="/pos/*" element={<RequireAuth><POSPage /></RequireAuth>} />
       <Route path="/pos/delivery" element={<RequireAuth><KitchenPage /></RequireAuth>} />
       <Route path="/admin/backend" element={<RequireAuth><BackendPage /></RequireAuth>} />
+      <Route path="/pos/customer-display" element={<RequireAuth><CustomerDisplayPage /></RequireAuth>} />
+      <Route path="/pos/payment" element={<RequireAuth><PaymentPage /></RequireAuth>} />
       <Route path="/customer/:orderId" element={<CustomerPage />} />
 
       {/* Default redirect */}
-      <Route path="/" element={<Navigate to={token ? '/pos' : '/login'} replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
