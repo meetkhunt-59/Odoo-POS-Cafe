@@ -44,6 +44,7 @@ export interface ProductInput {
   tax?: number;
   description?: string;
   in_stock?: boolean;
+  image_url?: string;
   variants?: ProductVariantInput[];
 }
 
@@ -55,6 +56,7 @@ export interface Product {
   unit: string | null;
   tax: number;
   description: string | null;
+  image_url: string | null;
   send_to_kitchen: boolean | null;
   is_active: boolean;
   in_stock: boolean;

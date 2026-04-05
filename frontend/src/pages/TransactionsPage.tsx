@@ -3,31 +3,31 @@ import DashboardNavbar from '../components/DashboardNavbar';
 import { getTransactions, deleteOrder } from '../api/client';
 import type { TransactionSummary } from '../api/types';
 import { useAuthStore } from '../store/authStore';
-import { Receipt, Calendar, CreditCard, Loader2, Trash2 } from 'lucide-react';
+import { Receipt, Calendar, CreditCard, Trash2 } from 'lucide-react';
 import './TransactionsPage.css';
 
 export default function TransactionsPage() {
   const token = useAuthStore(s => s.token);
   const [transactions, setTransactions] = useState<TransactionSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [offset, setOffset] = useState(0);
-  const limit = 50;
+  const [page, setPage] = useState(1);
+  const [dateFilter, setDateFilter] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 20;
 
   useEffect(() => {
     if (token) {
-      fetchData(0);
+      fetchData(page, dateFilter);
     }
-  }, [token]);
+  }, [token, page, dateFilter]);
 
-  const fetchData = async (currentOffset: number) => {
+  const fetchData = async (currentPage: number, dFilter: string) => {
     try {
       setLoading(true);
-      const data = await getTransactions(token!, limit, currentOffset);
-      if (currentOffset === 0) {
-         setTransactions(data);
-      } else {
-         setTransactions(prev => [...prev, ...data]);
-      }
+      const currentOffset = (currentPage - 1) * limit;
+      const data = await getTransactions(token!, limit, currentOffset, dFilter || undefined);
+      setTransactions(data);
+      setHasMore(data.length === limit);
     } catch (err) {
       console.error(err);
     } finally {
@@ -35,11 +35,8 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleLoadMore = () => {
-    const newOffset = offset + limit;
-    setOffset(newOffset);
-    fetchData(newOffset);
-  };
+  const handleNextPage = () => setPage(p => p + 1);
+  const handlePrevPage = () => setPage(p => Math.max(1, p - 1));
 
   const handleDelete = async (orderId: string) => {
     if (!token) return;
@@ -59,8 +56,24 @@ export default function TransactionsPage() {
     <div className="pos-dashboard-root transactions-page">
       <DashboardNavbar />
       <main className="pos-dashboard-main">
-        <div className="transactions-header">
-          <h1 className="header-title">Recent Transactions</h1>
+        <div className="transactions-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <h1 className="header-title" style={{ margin: 0 }}>Recent Transactions</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '14px', color: '#6B7280' }}>Date</label>
+            <input 
+              type="date" 
+              value={dateFilter} 
+              onChange={e => { setDateFilter(e.target.value); setPage(1); }}
+              style={{ padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '8px', outline: 'none' }}
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => { setDateFilter(''); setPage(1); }}
+                style={{ background: 'transparent', color: '#6B7280', border: 'none', cursor: 'pointer', fontSize: '13px' }}>
+                Clear
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="transactions-card slide-down">
@@ -119,13 +132,25 @@ export default function TransactionsPage() {
               </tbody>
             </table>
           </div>
-          {transactions.length > 0 && transactions.length % limit === 0 && (
-             <div className="load-more-container">
-               <button className="btn-load-more" onClick={handleLoadMore} disabled={loading}>
-                 {loading ? <Loader2 className="spinner" size={16} /> : 'Load More'}
-               </button>
-             </div>
-          )}
+          <div className="pagination-container" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E5E7EB' }}>
+            <span style={{ fontSize: '13px', color: '#6B7280' }}>Page {page}</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                className="btn-load-more" 
+                onClick={handlePrevPage} 
+                disabled={page === 1 || loading}
+                style={{ padding: '6px 16px' }}>
+                Previous
+              </button>
+              <button 
+                className="btn-load-more" 
+                onClick={handleNextPage} 
+                disabled={!hasMore || loading}
+                style={{ padding: '6px 16px' }}>
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>

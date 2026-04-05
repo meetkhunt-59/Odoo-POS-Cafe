@@ -218,14 +218,20 @@ def create_razorpay_order(
 
 @router.get("/transactions", response_model=list[TransactionSummary])
 def get_transactions(
+    date: str | None = None,
     limit: int = 50,
     offset: int = 0,
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    res = db.table("orders")\
-        .select("*, payment_method:payment_methods(name)")\
-        .order("created_at", desc=True)\
+    query = db.table("orders").select("*, payment_method:payment_methods(name)")
+    
+    if date:
+        # e.g., '2026-04-05'
+        # Supabase translates to gte/lte
+        query = query.gte("created_at", f"{date}T00:00:00").lte("created_at", f"{date}T23:59:59")
+        
+    res = query.order("created_at", desc=True)\
         .range(offset, offset + limit - 1)\
         .execute()
     

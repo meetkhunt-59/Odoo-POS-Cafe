@@ -59,8 +59,8 @@ export default function ProductCard({ product, onAdd }: Props) {
       {qty > 0 && (
         <div className="qty-badge">{qty}</div>
       )}
-      <div className="img-zone product-icon-zone">
-        <span className="product-emoji">{getCategoryIcon(product.category)}</span>
+      <div className="img-zone product-icon-zone" style={product.image_url ? { backgroundImage: `url(${product.image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', borderRadius: '12px' } : {}}>
+        {!product.image_url && <span className="product-emoji">{getCategoryIcon(product.category)}</span>}
       </div>
 
       <div className="info-zone">

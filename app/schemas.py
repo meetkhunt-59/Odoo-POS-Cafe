@@ -75,6 +75,7 @@ class ProductCreateRequest(BaseModel):
     unit: str | None = None
     tax: Decimal = Field(default=Decimal("0"))
     description: str | None = None
+    image_url: str | None = None
     send_to_kitchen: bool = Field(default=True)
     variants: list[VariantInput] = Field(default_factory=list)
 
@@ -92,6 +93,7 @@ class ProductUpdateRequest(BaseModel):
     unit: str | None = None
     tax: Decimal | None = None
     description: str | None = None
+    image_url: str | None = None
     send_to_kitchen: bool | None = None
     is_active: bool | None = None
     in_stock: bool | None = None
@@ -106,6 +108,7 @@ class ProductResponse(BaseModel):
     unit: str | None
     tax: Decimal
     description: str | None
+    image_url: str | None
     send_to_kitchen: bool | None
     is_active: bool
     in_stock: bool = True

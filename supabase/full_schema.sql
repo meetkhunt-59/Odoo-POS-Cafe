@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   unit TEXT,
   tax NUMERIC(5, 2) NOT NULL DEFAULT 0,
   description TEXT,
+  image_url TEXT,
   send_to_kitchen BOOLEAN, -- NULL means inherit from category
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   in_stock BOOLEAN NOT NULL DEFAULT TRUE,

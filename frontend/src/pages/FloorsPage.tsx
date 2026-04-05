@@ -190,7 +190,28 @@ export default function FloorsPage() {
                             )}
                           </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await api.updateTable(token!, table.id, { is_active: !table.is_active });
+                                  fetchFloors(token!);
+                                } catch (err) { alert("Failed to toggle table"); }
+                              }}
+                              title={table.is_active ? "Deactivate Table" : "Activate Table"}
+                              style={{ padding: '6px', cursor: 'pointer', background: table.is_active ? '#1A1A1A' : 'transparent', color: table.is_active ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A', display: 'flex' }}
+                            >
+                              <Power size={14} />
+                            </button>
+                            <button onClick={() => { setEditingTableId(table.id); setTableNumberInput(table.table_number); setTableSeatsInput(table.seats.toString()); setTableModalOpen(true); }} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Edit Table">
+                              <Edit size={14} />
+                            </button>
+                            <button onClick={() => handleDeleteTable(table.id)} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Remove Table">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -200,28 +221,9 @@ export default function FloorsPage() {
                               } catch (err) { alert("Failed to toggle table occupancy"); }
                             }}
                             title={table.appointment_resource ? "Mark Available" : "Mark Busy"}
-                            style={{ padding: '6px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: table.appointment_resource ? '#1A1A1A' : 'transparent', color: table.appointment_resource ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A' }}
+                            style={{ padding: '6px 8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: table.appointment_resource ? '#1A1A1A' : 'transparent', color: table.appointment_resource ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A', width: '100%' }}
                           >
                             {table.appointment_resource ? "Busy" : "Avail"}
-                          </button>
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              try {
-                                await api.updateTable(token!, table.id, { is_active: !table.is_active });
-                                fetchFloors(token!);
-                              } catch (err) { alert("Failed to toggle table"); }
-                            }}
-                            title={table.is_active ? "Deactivate Table" : "Activate Table"}
-                            style={{ padding: '6px', cursor: 'pointer', background: table.is_active ? '#1A1A1A' : 'transparent', color: table.is_active ? 'white' : '#1A1A1A', borderRadius: '6px', border: '1px solid #1A1A1A', display: 'flex' }}
-                          >
-                            <Power size={14} />
-                          </button>
-                          <button onClick={() => { setEditingTableId(table.id); setTableNumberInput(table.table_number); setTableSeatsInput(table.seats.toString()); setTableModalOpen(true); }} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Edit Table">
-                            <Edit size={14} />
-                          </button>
-                          <button onClick={() => handleDeleteTable(table.id)} style={{ background: 'transparent', border: '1px solid #E5E7EB', color: '#1A1A1A', borderRadius: '6px', cursor: 'pointer', padding: '6px' }} title="Remove Table">
-                            <Trash2 size={14} />
                           </button>
                         </div>
                       </div>

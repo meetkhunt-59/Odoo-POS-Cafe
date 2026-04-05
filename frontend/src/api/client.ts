@@ -137,6 +137,17 @@ export async function updateCategory(token: string, id: string, data: { name?: s
 
 // ── Products ─────────────────────────────────────────────────
 
+export async function uploadProductImage(token: string, file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_BASE}/backend/products/upload-image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  return handleResponse<{ url: string }>(res);
+}
+
 export async function listProducts(token: string): Promise<Product[]> {
   const res = await fetch(`${API_BASE}/backend/products`, { headers: authHeaders(token) });
   return handleResponse<Product[]>(res);
@@ -335,8 +346,10 @@ export async function deleteOrder(token: string, orderId: string): Promise<void>
 
 // ── Transactions ─────────────────────────────────────────────
 
-export async function getTransactions(token: string, limit: number = 50, offset: number = 0): Promise<TransactionSummary[]> {
-  const res = await fetch(`${API_BASE}/terminal/transactions?limit=${limit}&offset=${offset}`, { headers: authHeaders(token) });
+export async function getTransactions(token: string, limit: number = 50, offset: number = 0, date?: string): Promise<TransactionSummary[]> {
+  const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+  if (date) params.set('date', date);
+  const res = await fetch(`${API_BASE}/terminal/transactions?${params.toString()}`, { headers: authHeaders(token) });
   return handleResponse<TransactionSummary[]>(res);
 }
 

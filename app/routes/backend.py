@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from app.db import Client, get_db
 from app.deps import get_current_user
 from app.schemas import (
@@ -108,6 +108,31 @@ def update_category(
 
 # ─── PRODUCTS ─────────────────────────────────────────────────
 
+@router.post("/products/upload-image")
+async def upload_product_image(
+    file: UploadFile = File(...),
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    import uuid
+    import mimetypes
+    from app.config import settings
+    try:
+        content = await file.read()
+        file_ext = mimetypes.guess_extension(file.content_type or "application/octet-stream") or ""
+        file_name = f"{uuid.uuid4()}{file_ext}"
+
+        res = db.storage.from_("product-images").upload(
+            path=file_name,
+            file=content,
+            file_options={"content-type": file.content_type}
+        )
+        
+        public_url = f"{settings.supabase_url}/storage/v1/object/public/product-images/{file_name}"
+        return {"url": public_url}
+    except Exception as e:
+        raise HTTPException(500, f"Image upload failed: {str(e)}")
+
 @router.get("/products", response_model=list[ProductResponse])
 def list_products(
     db: Client = Depends(get_db),
@@ -128,6 +153,7 @@ def list_products(
             unit=p.get("unit"),
             tax=p["tax"],
             description=p.get("description"),
+            image_url=p.get("image_url"),
             send_to_kitchen=p.get("send_to_kitchen"),
             is_active=p["is_active"],
             in_stock=p.get("in_stock", True),
@@ -162,6 +188,7 @@ def create_product(
         "unit": payload.unit,
         "tax": float(payload.tax),
         "description": payload.description,
+        "image_url": payload.image_url,
         "send_to_kitchen": payload.send_to_kitchen,
     }
     prod_res = db.table("products").insert(prod_data).execute()
@@ -199,6 +226,7 @@ def create_product(
         unit=p.get("unit"),
         tax=p["tax"],
         description=p.get("description"),
+        image_url=p.get("image_url"),
         send_to_kitchen=p.get("send_to_kitchen"),
         is_active=p["is_active"],
         in_stock=p.get("in_stock", True),
@@ -274,6 +302,7 @@ def update_product(
         unit=p.get("unit"),
         tax=p["tax"],
         description=p.get("description"),
+        image_url=p.get("image_url"),
         send_to_kitchen=p.get("send_to_kitchen"),
         is_active=p["is_active"],
         in_stock=p.get("in_stock", True),
@@ -618,8 +647,16 @@ def get_dashboard_stats(
                         # Graph aggregation
                         o = order_map.get(item["order_id"])
                         if o:
-                            day = o["created_at"][:10]
-                            daily_aggregates[day] = daily_aggregates.get(day, 0) + rev
+                            if period == "today":
+                                try:
+                                    # Convert 2026-04-05T14:30.. to 14:00
+                                    time_key = o["created_at"][11:13] + ":00"
+                                except:
+                                    time_key = o["created_at"][:10]
+                            else:
+                                time_key = o["created_at"][:10]
+                                
+                            daily_aggregates[time_key] = daily_aggregates.get(time_key, 0) + rev
 
                     total_orders_count = len(valid_order_ids)
                     

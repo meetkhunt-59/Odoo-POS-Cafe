@@ -21,10 +21,12 @@ export default function NewProductPage() {
     price: '',
     unit: '',
     tax: '',
-    description: ''
+    description: '',
+    in_stock: true
   });
   
   const [variants, setVariants] = useState<{ attribute: string; value: string; extra_price: string }[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +44,8 @@ export default function NewProductPage() {
             price: existing.price.toString(),
             unit: existing.unit || '',
             tax: existing.tax.toString(),
-            description: existing.description || ''
+            description: existing.description || '',
+            in_stock: existing.in_stock
           });
           setVariants(existing.variants.map(v => ({
             attribute: v.attribute,
@@ -80,6 +83,12 @@ export default function NewProductPage() {
       const catVal = formData.category.trim() || 'General';
       const existingCategory = categories.find(c => c.name.toLowerCase() === catVal.toLowerCase());
       
+      let image_url: string | undefined = undefined;
+      if (imageFile) {
+        const uploadRes = await api.uploadProductImage(token, imageFile);
+        image_url = uploadRes.url;
+      }
+      
       const payload = {
         name: formData.name.trim(),
         category: catVal,
@@ -87,6 +96,8 @@ export default function NewProductPage() {
         unit: formData.unit.trim() || undefined,
         tax: parseFloat(formData.tax) || undefined,
         description: formData.description.trim() || undefined,
+        in_stock: formData.in_stock,
+        image_url: image_url,
         variants: variants.filter(v => v.attribute && v.value).map(v => ({
           attribute: v.attribute,
           value: v.value,
@@ -162,6 +173,16 @@ export default function NewProductPage() {
                       style={{ padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '14px', outline: 'none' }}
                       placeholder="Optional description" 
                     />
+                  </div>
+                  <div className="form-group full-width">
+                    <label>Product Image</label>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      style={{ padding: '8px', border: '1px solid #D1D5DB', borderRadius: '8px', cursor: 'pointer' }}
+                    />
+                    {imageFile && <span style={{fontSize: '12px', color: '#10B981', marginTop: '4px'}}>Selected: {imageFile.name}</span>}
                   </div>
                 </div>
               </div>

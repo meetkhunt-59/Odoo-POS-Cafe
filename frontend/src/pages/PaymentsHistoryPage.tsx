@@ -10,6 +10,7 @@ export default function PaymentsHistoryPage() {
   const token = useAuthStore(s => s.token);
   const [payments, setPayments] = useState<PaymentSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState('');
 
   useEffect(() => {
     if (token) {
@@ -40,8 +41,24 @@ export default function PaymentsHistoryPage() {
     <div className="pos-dashboard-root transactions-page">
       <DashboardNavbar />
       <main className="pos-dashboard-main">
-        <div className="transactions-header">
-          <h1 className="header-title">Payment Summary</h1>
+        <div className="transactions-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <h1 className="header-title" style={{ margin: 0 }}>Payment Summary</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '14px', color: '#6B7280' }}>Date</label>
+            <input 
+              type="date" 
+              value={dateFilter} 
+              onChange={e => setDateFilter(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid #D1D5DB', borderRadius: '8px', outline: 'none' }}
+            />
+            {dateFilter && (
+              <button 
+                onClick={() => setDateFilter('')}
+                style={{ background: 'transparent', color: '#6B7280', border: 'none', cursor: 'pointer', fontSize: '13px' }}>
+                Clear
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="transactions-card slide-down">
@@ -61,7 +78,7 @@ export default function PaymentsHistoryPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {payments.map((p, idx) => (
+                  {(dateFilter ? payments.filter(p => p.date === dateFilter) : payments).map((p, idx) => (
                     <tr key={idx}>
                       <td>
                         <div className="cell-date">
@@ -78,9 +95,9 @@ export default function PaymentsHistoryPage() {
                       <td className="cell-amount">${Number(p.total_amount).toFixed(2)}</td>
                     </tr>
                   ))}
-                  {payments.length === 0 && !loading && (
+                  {(dateFilter ? payments.filter(p => p.date === dateFilter) : payments).length === 0 && !loading && (
                       <tr>
-                        <td colSpan={3} className="empty-table">No localized payments recorded on this terminal.</td>
+                        <td colSpan={3} className="empty-table">No localized payments recorded on this terminal for the selected criteria.</td>
                       </tr>
                   )}
                 </tbody>
