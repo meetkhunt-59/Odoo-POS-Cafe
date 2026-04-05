@@ -373,6 +373,15 @@ export async function getKitchenOrders(token: string): Promise<Order[]> {
   return handleResponse<Order[]>(res);
 }
 
+export async function updateOrderStatus(token: string, orderId: string, action: string): Promise<Order> {
+  const res = await fetch(`${API_BASE}/terminal/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action }),
+  });
+  return handleResponse<Order>(res);
+}
+
 // ── Public Self-Ordering ─────────────────────────────────────
 
 export async function getPublicProducts(): Promise<Product[]> {

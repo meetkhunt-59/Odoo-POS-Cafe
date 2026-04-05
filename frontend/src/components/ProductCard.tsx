@@ -32,17 +32,19 @@ export default function ProductCard({ product, onAdd }: Props) {
   const cartItem = cart.find((item) => item.product.id === product.id);
   const qty = cartItem?.quantity || 0;
 
-  const handleAdd = () => {
-    onAdd(product);
-  };
-
   const handleDecrease = (e: React.MouseEvent) => {
+    if (!product.in_stock) return;
     e.stopPropagation(); // prevent adding another product to cart when clicking minus
     updateCartQuantity(product.id, qty - 1);
   };
 
+  const handleAdd = () => {
+    if (!product.in_stock) return;
+    onAdd(product);
+  };
+
   return (
-    <div className={`product-card ${qty > 0 ? 'selected' : ''}`} onClick={handleAdd}>
+    <div className={`product-card ${qty > 0 ? 'selected' : ''} ${!product.in_stock ? 'out-of-stock' : ''}`} onClick={handleAdd} style={{ opacity: product.in_stock ? 1 : 0.5, cursor: product.in_stock ? 'pointer' : 'not-allowed' }}>
       {qty > 0 && (
         <div className="qty-badge">{qty}</div>
       )}
@@ -52,7 +54,9 @@ export default function ProductCard({ product, onAdd }: Props) {
 
       <div className="info-zone">
         <div className="info-left">
-          <h3 className="product-name">{product.name}</h3>
+          <h3 className="product-name" style={{ textDecoration: product.in_stock ? 'none' : 'line-through' }}>
+            {product.name} {!product.in_stock && <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 800 }}>(86)</span>}
+          </h3>
           <span className="price">₹{Number(product.price).toFixed(2)}</span>
         </div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>

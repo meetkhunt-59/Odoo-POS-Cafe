@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   description TEXT,
   send_to_kitchen BOOLEAN, -- NULL means inherit from category
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  in_stock BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

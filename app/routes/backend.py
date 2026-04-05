@@ -130,6 +130,7 @@ def list_products(
             description=p.get("description"),
             send_to_kitchen=p.get("send_to_kitchen"),
             is_active=p["is_active"],
+            in_stock=p.get("in_stock", True),
             variants=variants,
         ))
     return result
@@ -200,6 +201,7 @@ def create_product(
         description=p.get("description"),
         send_to_kitchen=p.get("send_to_kitchen"),
         is_active=p["is_active"],
+        in_stock=p.get("in_stock", True),
         variants=[ProductVariantResponse(**v) for v in p.get("product_variants", [])],
     )
 
@@ -271,6 +273,7 @@ def update_product(
         description=p.get("description"),
         send_to_kitchen=p.get("send_to_kitchen"),
         is_active=p["is_active"],
+        in_stock=p.get("in_stock", True),
         variants=[ProductVariantResponse(**v) for v in p.get("product_variants", [])],
     )
 

@@ -45,9 +45,9 @@ def create_order(
     total = Decimal("0")
     order_items = []
     
-    # Fast Bulk Product Lookup (O(1) instead of O(N))
+    # Fast Bulk Product Lookup
     product_ids = [str(i.product_id) for i in payload.items]
-    prod_res = db.table("products").select("id, price").in_("id", product_ids).execute()
+    prod_res = db.table("products").select("id, price, tax, in_stock").in_("id", product_ids).execute()
     prod_map = {p["id"]: p for p in prod_res.data}
     
     insert_data_list = []
@@ -55,6 +55,8 @@ def create_order(
         prod = prod_map.get(str(item_data.product_id))
         if not prod:
             raise HTTPException(404, f"Product {item_data.product_id} not found in catalog.")
+        if prod.get("in_stock", True) is False:
+            raise HTTPException(400, f"Cannot order out-of-stock product: {item_data.product_id}")
             
         insert_data_list.append({
             "order_id": order["id"],
@@ -62,7 +64,10 @@ def create_order(
             "quantity": item_data.quantity,
             "price_at_checkout": prod["price"],
         })
-        total += Decimal(str(prod["price"])) * Decimal(str(item_data.quantity))
+        line_price = Decimal(str(prod["price"])) * Decimal(str(item_data.quantity))
+        line_tax = line_price * (Decimal(str(prod.get("tax", 0))) / Decimal("100"))
+        
+        total += (line_price + line_tax)
     
     # Fast Bulk Insert (O(1) instead of O(N))
     if insert_data_list:
@@ -73,9 +78,9 @@ def create_order(
     
     # Apply discount
     discount_pct = Decimal(str(payload.discount_percentage)) if payload.discount_percentage else Decimal("0")
-    total = total * (Decimal("1") - (discount_pct / Decimal("100")))
+    final_total = total * (Decimal("1") - (discount_pct / Decimal("100")))
     
-    upd = db.table("orders").update({"total_amount": float(total)}).eq("id", order["id"]).execute()
+    upd = db.table("orders").update({"total_amount": float(final_total)}).eq("id", order["id"]).execute()
     if not upd.data:
         raise HTTPException(500, "Failed to execute final order total calculation update.")
         

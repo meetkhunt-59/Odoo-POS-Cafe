@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import app.db as db
 from app.config import settings
-from app.routes import admin, auth, backend, terminal, public
+from app.routes import admin, auth, backend, terminal, public, ws
 
 def create_app() -> FastAPI:
     app = FastAPI(title="POS Cafe Backend", version="0.1.0")
@@ -25,6 +25,7 @@ def create_app() -> FastAPI:
     app.include_router(backend.router)
     app.include_router(terminal.router)
     app.include_router(public.router)
+    app.include_router(ws.router)
     return app
 
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Store, CreditCard, Banknote, Smartphone, Link, QrCode } from 'lucide-react';
+import { Plus, Store, CreditCard, Banknote, Smartphone, Link } from 'lucide-react';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { listPointOfSales, createPointOfSale, updatePointOfSale } from '../api/client';
 import type { PointOfSale } from '../api/types';
@@ -203,6 +203,21 @@ export default function SettingsPage() {
 
           {selfOrderEnabled && (
             <div className="self-order-tables">
+              {/* Global Menu-Only Option */}
+              <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '16px', marginBottom: '32px', display: 'flex', gap: '24px', border: '1px solid #cbd5e1' }}>
+                <img 
+                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${window.location.origin}/self-order/menu-only`)}`} 
+                   alt="Menu QR" 
+                   style={{ width: '120px', height: '120px', borderRadius: '8px' }} 
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: 800 }}>Digital Menu QR (Read Only)</h3>
+                  <p style={{ color: '#475569', fontSize: '14px', maxWidth: '400px' }}>Place this generic QR code at entryways or windows. Customers can scan it to browse your menu items and prices offline without being assigned to a physical table.</p>
+                  <a href={`${window.location.origin}/self-order/menu-only`} target="_blank" style={{ color: 'var(--primary)', fontWeight: 600, fontSize: '14px', textDecoration: 'none' }}>Preview Digital Menu →</a>
+                </div>
+              </div>
+
+              <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '16px' }}>Table Specific Checkouts (Ordering Enabled)</h3>
               {!session ? (
                  <div style={{ padding: '16px', background: '#fef2f2', color: '#ef4444', borderRadius: '12px', fontWeight: 600 }}>
                    A register session must be opened first to link self-orders. Please open a session in the POS panel.
@@ -217,19 +232,21 @@ export default function SettingsPage() {
                     const payload = btoa(`${session.id}:${t.id}`);
                     const url = `${window.location.origin}/self-order/${payload}`;
                     return (
-                      <div key={t.id} style={{ border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontWeight: 800, fontSize: '18px', color: '#334155' }}>Table {t.table_number}</div>
-                        <input 
-                          readOnly 
-                          value={url} 
-                          style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '13px', width: '100%' }}
+                      <div key={t.id} style={{ border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`} 
+                          alt="Table QR" 
+                          style={{ width: '80px', height: '80px', borderRadius: '8px' }} 
                         />
-                        <button 
-                          onClick={() => window.open(url, '_blank')}
-                          style={{ background: 'var(--primary)', color: 'white', padding: '8px', borderRadius: '8px', fontWeight: 700, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer' }}
-                        >
-                          <Link size={16} /> Open Mobile Link
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                          <div style={{ fontWeight: 800, fontSize: '18px', color: '#334155' }}>Table {t.table_number}</div>
+                          <button 
+                            onClick={() => window.open(url, '_blank')}
+                            style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', fontWeight: 700, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', border: 'none', cursor: 'pointer', fontSize: '13px' }}
+                          >
+                            <Link size={14} /> Open Link
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

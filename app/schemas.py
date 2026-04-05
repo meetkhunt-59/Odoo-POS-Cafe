@@ -94,6 +94,7 @@ class ProductUpdateRequest(BaseModel):
     description: str | None = None
     send_to_kitchen: bool | None = None
     is_active: bool | None = None
+    in_stock: bool | None = None
     variants: list[VariantInput] | None = None
 
 
@@ -107,6 +108,7 @@ class ProductResponse(BaseModel):
     description: str | None
     send_to_kitchen: bool | None
     is_active: bool
+    in_stock: bool = True
     variants: list[ProductVariantResponse]
 
 

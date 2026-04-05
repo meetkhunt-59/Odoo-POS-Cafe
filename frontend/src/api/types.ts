@@ -40,6 +40,7 @@ export interface Product {
   description: string | null;
   send_to_kitchen: boolean | null;
   is_active: boolean;
+  in_stock: boolean;
   variants: ProductVariant[];
 }
 

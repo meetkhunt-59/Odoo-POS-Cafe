@@ -1,9 +1,92 @@
-import { usePosStore } from '../store/posStore';
+import { useState, useEffect } from 'react';
+import * as api from '../api/client';
+import { useAuthStore } from '../store/authStore';
 import './CustomerDisplayPage.css';
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CustomerDisplayPage() {
-  const { cart, selectedTableId, tables, paymentSuccessOrderNumber, discountPercent } = usePosStore();
+  const token = useAuthStore(s => s.token);
   
+  const [cart, setCart] = useState<any[]>([]);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [tables, setTables] = useState<any[]>([]);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [paymentSuccessOrderNumber, setPaymentSuccessOrderNumber] = useState<number | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  useEffect(() => {
+    const wsUrl = (import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/display';
+    const socket = new WebSocket(wsUrl);
+    
+    socket.onopen = () => console.log('Customer Display Listening');
+    
+    socket.onmessage = async (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.action === 'SYNC_CART') {
+           // If we just hit a success state, freeze the cart details visually
+           if (payload.data.paymentSuccessOrderNumber) {
+               setPaymentSuccessOrderNumber(payload.data.paymentSuccessOrderNumber);
+               return; 
+           }
+           
+           setCart(payload.data.cart || []);
+           setDiscountPercent(payload.data.discountPercent || 0);
+           setSelectedTableId(payload.data.selectedTableId || null);
+           setPaymentSuccessOrderNumber(payload.data.paymentSuccessOrderNumber || null);
+           if (payload.data.tables) setTables(payload.data.tables);
+        }
+        else if (payload.action === 'TRIGGER_PAYMENT') {
+           // Intercept Razorpay processing here!
+           const { targetOrderId, paymentMethodId, finalOrderNumber, rzpResponse } = payload.data;
+           
+           const isLoaded = await loadRazorpayScript();
+           if (!isLoaded) return;
+           
+           const options = {
+             key: rzpResponse.key_id,
+             amount: rzpResponse.amount,
+             currency: rzpResponse.currency,
+             name: "Odoo POS Cafe Sandbox",
+             description: `Order #${finalOrderNumber}`,
+             order_id: rzpResponse.razorpay_order_id,
+             handler: async function () {
+                try {
+                  await api.payOrder(token!, targetOrderId, paymentMethodId);
+                  setPaymentSuccessOrderNumber(finalOrderNumber);
+                  
+                  // Broadcast Success back so the master terminal unblocks
+                  socket.send(JSON.stringify({
+                      action: 'PAYMENT_SUCCESS',
+                      data: { order_number: finalOrderNumber }
+                  }));
+                } catch(err) {
+                  alert("Finalizing payment failed on Server!");
+                }
+             },
+             theme: { color: "#3B82F6" }
+           };
+           
+           const rzp = new (window as any).Razorpay(options);
+           rzp.open();
+        }
+      } catch(e) {}
+    };
+
+    setWs(socket);
+    return () => socket.close();
+  }, [token]);
+
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
   const taxRate = cart.length > 0 ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length : 0;
   const taxAmount = subTotal * (taxRate / 100);

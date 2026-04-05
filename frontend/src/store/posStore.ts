@@ -218,3 +218,53 @@ export const usePosStore = create<PosState>()(
     }
   )
 );
+
+// --- Real-Time Sync WebSocket (Cashier -> Customer Display) ---
+let ws: WebSocket | null = null;
+let reconnectTimer: any = null;
+
+const connectWebSocket = () => {
+    if (ws) return;
+    const wsUrl = (import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/display';
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => console.log('Connected to Customer Display Sync WebSocket');
+    ws.onclose = () => {
+        ws = null;
+        reconnectTimer = setTimeout(connectWebSocket, 3000);
+    };
+    ws.onmessage = (event) => {
+        try {
+            const payload = JSON.parse(event.data);
+            if (payload.action === 'PAYMENT_SUCCESS') {
+                usePosStore.getState().setPaymentSuccess(payload.data.order_number);
+            }
+        } catch(e) {}
+    };
+};
+
+// Initiate connection immediately
+connectWebSocket();
+
+export const broadcastToDisplay = (action: string, data: any) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action, data }));
+    }
+};
+
+// Broadcast cart changes automatically
+usePosStore.subscribe((state, prevState) => {
+    if (
+        state.cart !== prevState.cart || 
+        state.discountPercent !== prevState.discountPercent ||
+        state.selectedTableId !== prevState.selectedTableId ||
+        state.paymentSuccessOrderNumber !== prevState.paymentSuccessOrderNumber
+    ) {
+        broadcastToDisplay('SYNC_CART', {
+            cart: state.cart,
+            discountPercent: state.discountPercent,
+            selectedTableId: state.selectedTableId,
+            paymentSuccessOrderNumber: state.paymentSuccessOrderNumber,
+            tables: state.tables
+        });
+    }
+});

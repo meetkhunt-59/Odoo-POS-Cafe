@@ -1,28 +1,29 @@
 import { useNavigate } from 'react-router-dom';
-import { usePosStore } from '../store/posStore';
-import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
 import PaymentScreenOverlay from '../components/PaymentScreenOverlay';
 import PaymentSuccessOverlay from '../components/PaymentSuccessOverlay';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { broadcastToDisplay, usePosStore } from '../store/posStore';
 
-const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    if ((window as any).Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
+import { useAuthStore } from '../store/authStore';
 
 export default function PaymentPage() {
   const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
-  const { cart, session, selectedTableId, orderType, selectedCustomer, clearCart, resetForNewCustomer, activeOrder, setPaymentSuccess, paymentMethods, discountPercent, orderNote } = usePosStore();
+  const { cart, session, selectedTableId, orderType, selectedCustomer, clearCart, resetForNewCustomer, activeOrder, setPaymentSuccess, paymentMethods, discountPercent, orderNote, paymentSuccessOrderNumber } = usePosStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [waitingForCustomer, setWaitingForCustomer] = useState(false);
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
+
+  // Auto-resolve when customer completes payment on display
+  useEffect(() => {
+    if (waitingForCustomer && paymentSuccessOrderNumber && activeOrder?.number === paymentSuccessOrderNumber) {
+        setSuccessOrder({ id: activeOrder.id, number: activeOrder.number, total: activeOrder.total });
+        clearCart();
+        setWaitingForCustomer(false);
+        setIsProcessing(false);
+    }
+  }, [waitingForCustomer, paymentSuccessOrderNumber, activeOrder, clearCart]);
 
   const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
   const taxRate = cart.length > 0 ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length : 0;
@@ -63,51 +64,17 @@ export default function PaymentPage() {
       if (selectedMethod?.type === 'upi' || selectedMethod?.type === 'card' || selectedMethod?.name.toLowerCase().includes('upi') || selectedMethod?.name.toLowerCase().includes('card') || selectedMethod?.name.toLowerCase().includes('razorpay')) {
         const rzpResponse = await api.createRazorpayOrder(token, targetOrderId);
         
-        const isLoaded = await loadRazorpayScript();
-        if (!isLoaded) {
-          alert('Razorpay SDK failed to load. Please check your internet connection.');
-          setIsProcessing(false);
-          return;
-        }
-
-        const options = {
-          key: rzpResponse.key_id,
-          amount: rzpResponse.amount,
-          currency: rzpResponse.currency,
-          name: "Odoo POS Cafe Sandbox",
-          description: `Order #${finalOrderNumber}`,
-          order_id: rzpResponse.razorpay_order_id,
-          handler: async function (_response: any) {
-             // Razorpay Success Callback
-             try {
-               await api.payOrder(token, targetOrderId as string, paymentMethodId);
-               setPaymentSuccess(finalOrderNumber!);
-               setSuccessOrder({ id: targetOrderId as string, number: finalOrderNumber!, total: finalTotal! });
-               clearCart();
-             } catch(err: any) {
-               alert("Server confirmation failed securely: " + err.message);
-             } finally {
-               setIsProcessing(false);
-             }
-          },
-          modal: {
-            ondismiss: function() {
-              // Customer closed payment modal popup
-              setIsProcessing(false);
-            }
-          },
-          theme: {
-            color: "#3B82F6"
-          }
-        };
-
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any){
-           alert('Payment failed permanently. Reason: ' + response.error.description);
-           setIsProcessing(false);
+        setWaitingForCustomer(true);
+        // Delegate completion to the Customer Display Device
+        broadcastToDisplay('TRIGGER_PAYMENT', {
+            targetOrderId,
+            paymentMethodId,
+            finalOrderNumber,
+            finalTotal,
+            rzpResponse
         });
-        rzp.open();
-        return; // Halt here since callback function handles the rest
+        
+        return; // Halt here since callback function on the other device handles the rest
       }
 
       // 3. Fallback to normal Cash processing

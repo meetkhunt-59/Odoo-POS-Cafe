@@ -104,6 +104,23 @@
   color: var(--primary);
 }
 
+.menu-card.out-of-stock {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
+.sold-out-badge {
+  display: inline-block;
+  background: #ef4444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 900;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 .menu-card .add-btn {
   align-self: flex-end;
   background: #f1f5f9;

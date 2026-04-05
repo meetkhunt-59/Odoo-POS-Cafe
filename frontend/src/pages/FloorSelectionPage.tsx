@@ -13,7 +13,13 @@ export default function FloorSelectionPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (token) fetchAll(token);
+    if (token) {
+      fetchAll(token);
+      const intervalId = setInterval(() => {
+         fetchAll(token);
+      }, 5000);
+      return () => clearInterval(intervalId);
+    }
   }, [token, fetchAll]);
 
   // Set default floor
