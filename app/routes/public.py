@@ -31,6 +31,7 @@ def get_public_products(db: Client = Depends(get_db)):
             unit=p.get("unit"),
             tax=p["tax"],
             description=p.get("description"),
+            image_url=p.get("image_url"),
             send_to_kitchen=p.get("send_to_kitchen"),
             is_active=p["is_active"],
             in_stock=p.get("in_stock", True),

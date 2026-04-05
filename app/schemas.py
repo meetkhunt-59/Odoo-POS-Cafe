@@ -105,11 +105,11 @@ class ProductResponse(BaseModel):
     name: str
     category: str
     price: Decimal
-    unit: str | None
+    unit: str | None = None
     tax: Decimal
-    description: str | None
-    image_url: str | None
-    send_to_kitchen: bool | None
+    description: str | None = None
+    image_url: str | None = None
+    send_to_kitchen: bool | None = None
     is_active: bool
     in_stock: bool = True
     variants: list[ProductVariantResponse]
