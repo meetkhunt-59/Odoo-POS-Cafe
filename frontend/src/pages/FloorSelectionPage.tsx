@@ -29,7 +29,7 @@ export default function FloorSelectionPage() {
     }
   }, [floors, selectedFloorId]);
 
-  const floorTables = tables.filter(t => t.floor_id === selectedFloorId && !t.appointment_resource);
+  const floorTables = tables.filter(t => t.floor_id === selectedFloorId);
   const selectedTable = tables.find(t => t.id === selectedTableId);
 
   const handleTableClick = (tableId: string) => {
@@ -65,20 +65,26 @@ export default function FloorSelectionPage() {
                <p>No tables configured for this floor.</p>
              </div>
            ) : (
-             floorTables.map(table => (
-               <button 
-                 key={table.id}
-                 className={`table-card ${selectedTableId === table.id ? 'active' : ''} ${!table.is_active ? 'disabled' : ''}`}
-                 onClick={() => handleTableClick(table.id)}
-                 disabled={!table.is_active}
-               >
-                 <div className="table-number">{table.table_number}</div>
-                 <div className="table-meta">
-                   <span>{table.seats} Seats</span>
-                 </div>
-                 {selectedTableId === table.id && <div className="active-indicator" style={{ background: '#000000', color: '#ffffff' }}>Current</div>}
-               </button>
-             ))
+              floorTables.map(table => {
+                const isUnavailable = table.appointment_resource;
+                const isActive = selectedTableId === table.id;
+                
+                return (
+                  <button 
+                    key={table.id}
+                    className={`table-card ${isActive ? 'active' : ''} ${isUnavailable ? 'unavailable' : 'available'}`}
+                    onClick={() => handleTableClick(table.id)}
+                    disabled={isUnavailable}
+                  >
+                    <div className="table-number">{table.table_number}</div>
+                    <div className="table-meta">
+                      <span>{table.seats} Seats</span>
+                      <span className="status-label">{isUnavailable ? 'Occupied' : 'Open'}</span>
+                    </div>
+                    {isActive && <div className="active-indicator">Current</div>}
+                  </button>
+                );
+              })
            )}
         </section>
         </div>

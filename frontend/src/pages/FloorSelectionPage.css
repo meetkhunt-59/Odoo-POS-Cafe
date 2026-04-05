@@ -66,8 +66,6 @@
 
 .table-card {
   aspect-ratio: 1/1;
-  background: white;
-  border: 2px solid #E5E7EB;
   border-radius: 20px;
   display: flex;
   flex-direction: column;
@@ -75,43 +73,76 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  border: 1.5px solid transparent;
+  padding: 16px;
 }
 
-.table-card:hover:not(.disabled) {
-  border-color: #1A1A1A;
+/* Creamy Green for Available */
+.table-card.available {
+  background: #F0F9F1; /* matches creamy green @[skills/frontend-design] principles */
+  border-color: #D1EADE;
+}
+
+.table-card.available .table-number {
+  color: #2D6A4F;
+}
+
+.table-card.available:hover {
+  background: #E8F5E9;
+  border-color: #2D6A4F;
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+  box-shadow: 0 8px 24px rgba(45, 106, 79, 0.1);
+}
+
+/* Creamy Red for Unavailable */
+.table-card.unavailable {
+  background: #FEF2F2; /* Creamy Red */
+  border-color: #FEE2E2;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.table-card.unavailable .table-number {
+  color: #991B1B;
+}
+
+.table-card.unavailable .status-label {
+  color: #B91C1C;
+  font-weight: 700;
 }
 
 .table-card.active {
   border-color: #1A1A1A;
   background: #ffffff;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.table-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  filter: grayscale(1);
+  transform: scale(1.02);
 }
 
 .table-number {
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
-  color: #1A1A1A;
+  line-height: 1;
 }
 
 .table-meta {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 11px;
+  gap: 4px;
+  font-size: 12px;
   font-weight: 600;
   color: #6B7280;
+}
+
+.status-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
 }
 
 .reserved-tag {
@@ -126,14 +157,14 @@
 
 .active-indicator {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 8px;
+  right: 8px;
   background: #1A1A1A;
   color: white;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 3px 6px;
+  border-radius: 6px;
   text-transform: uppercase;
 }
 

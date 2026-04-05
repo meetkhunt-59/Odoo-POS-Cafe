@@ -22,7 +22,7 @@ export default function CustomerDisplayPage() {
   const [tables, setTables] = useState<any[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [paymentSuccessOrderNumber, setPaymentSuccessOrderNumber] = useState<number | null>(null);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+
 
   useEffect(() => {
     const wsUrl = (import.meta.env.VITE_API_BASE || 'http://localhost:8000').replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/display';
@@ -83,11 +83,15 @@ export default function CustomerDisplayPage() {
       } catch(e) {}
     };
 
-    setWs(socket);
+
     return () => socket.close();
   }, [token]);
 
-  const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
+  const subTotal = cart.reduce((acc, item) => {
+    const basePrice = Number(item.product.price);
+    const extraPrice = Number(item.variant?.extra_price || 0);
+    return acc + (basePrice + extraPrice) * item.quantity;
+  }, 0);
   const taxRate = cart.length > 0 ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length : 0;
   const taxAmount = subTotal * (taxRate / 100);
   const baseTotal = subTotal + taxAmount;
@@ -124,11 +128,14 @@ export default function CustomerDisplayPage() {
                     <span className="inv-item">Item</span>
                     <span className="inv-price">Amount</span>
                   </div>
-                  {cart.map(item => (
-                    <div key={item.product.id} className="invoice-row">
+                  {cart.map((item, idx) => (
+                    <div key={`${item.product.id}-${item.variant?.id || 'base'}-${idx}`} className="invoice-row">
                        <span className="inv-qty">{item.quantity}</span>
-                       <span className="inv-item">{item.product.name}</span>
-                       <span className="inv-price">₹{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                       <span className="inv-item">
+                         {item.product.name}
+                         {item.variant && <small style={{ display: 'block', fontSize: '0.8em', opacity: 0.7 }}>{item.variant.attribute}: {item.variant.value}</small>}
+                       </span>
+                       <span className="inv-price">₹{((Number(item.product.price) + Number(item.variant?.extra_price || 0)) * item.quantity).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>

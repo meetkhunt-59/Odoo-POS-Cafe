@@ -388,6 +388,7 @@ def update_order_status(
     status_map = {
         "mark_preparing": "preparing",
         "mark_completed": "completed",
+        "mark_delivered": "delivered",
         "mark_cancelled": "cancelled"
     }
     new_status = status_map.get(payload.action)

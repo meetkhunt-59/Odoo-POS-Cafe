@@ -21,6 +21,7 @@ import CustomersPage from './pages/CustomersPage';
 import NewCustomerPage from './pages/NewCustomerPage';
 import SelfOrderPage from './pages/SelfOrderPage';
 import ReportingPage from './pages/ReportingPage';
+import OrderStatusPage from './pages/OrderStatusPage';
 
 // Auth guard component
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,7 @@ function App() {
       {/* Public routes */}
       <Route path="/login" element={token ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/self-order/:token" element={<SelfOrderPage />} />
+      <Route path="/order-status" element={<OrderStatusPage />} />
 
       {/* Protected routes */}
       <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
