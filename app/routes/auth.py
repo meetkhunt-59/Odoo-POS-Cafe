@@ -33,6 +33,12 @@ def signup(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supabase signup did not return user")
 
     role = "admin" if not admin_exists(db) else "staff"
+    
+    # Check if a profile already exists to prevent duplicate key errors on retry
+    existing = db.table("profiles").select("*").eq("id", str(sess.user.id)).execute()
+    if existing.data:
+        return ProfilePublic(**existing.data[0])
+
     res = db.table("profiles").insert({"id": str(sess.user.id), "name": payload.name, "role": role}).execute()
     if not res.data:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Profile already exists")
