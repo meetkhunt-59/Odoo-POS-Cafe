@@ -275,13 +275,20 @@ export async function deletePaymentMethod(token: string, pmId: string): Promise<
 
 // ── Terminal / Sessions ──────────────────────────────────────
 
-export async function openSession(token: string): Promise<SessionSummary> {
+export async function openSession(token: string, posId?: string): Promise<SessionSummary> {
   const res = await fetch(`${API_BASE}/terminal/sessions/open`, {
     method: 'POST',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ pos_id: posId || null }),
   });
   return handleResponse<SessionSummary>(res);
+}
+
+export async function getLastClosingPerPos(token: string): Promise<Record<string, number>> {
+  const res = await fetch(`${API_BASE}/terminal/sessions/last-closing`, {
+    headers: authHeaders(token),
+  });
+  return handleResponse<Record<string, number>>(res);
 }
 
 // ── Orders ───────────────────────────────────────────────────

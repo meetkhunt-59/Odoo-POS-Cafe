@@ -189,6 +189,7 @@ class SessionSummary(BaseModel):
     id: UUID
     status: str
     responsible_user_id: UUID
+    pos_id: UUID | None = None
     opened_at: datetime
     closed_at: datetime | None
     closing_sale_amount: Decimal | None
@@ -196,6 +197,7 @@ class SessionSummary(BaseModel):
 
 class SessionOpenRequest(BaseModel):
     table_id: UUID | None = None
+    pos_id: UUID | None = None
 
 
 class SessionCloseRequest(BaseModel):

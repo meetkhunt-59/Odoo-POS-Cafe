@@ -95,6 +95,7 @@ CREATE TABLE payment_methods (
 CREATE TABLE pos_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   responsible_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
+  pos_id UUID REFERENCES point_of_sales(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
   opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   closed_at TIMESTAMPTZ,

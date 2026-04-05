@@ -4,7 +4,7 @@ import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import DashboardNavbar from '../components/DashboardNavbar';
 import { MoreVertical, Settings, Monitor, MonitorPlay, Plus } from 'lucide-react';
-import { listPointOfSales, getPaymentSummary } from '../api/client';
+import { listPointOfSales, getLastClosingPerPos } from '../api/client';
 import type { PointOfSale } from '../api/types';
 import './DashboardPage.css';
 
@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const resetForNewCustomer = usePosStore((s) => s.resetForNewCustomer);
 
   const [posList, setPosList] = useState<PointOfSale[]>([]);
-  const [cashTotal, setCashTotal] = useState<number>(0);
+  const [closingCashMap, setClosingCashMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (token) {
@@ -22,20 +22,21 @@ export default function DashboardPage() {
         .then(data => setPosList(data))
         .catch(err => console.error("Failed to load POS list:", err));
 
-      getPaymentSummary(token)
-        .then(summaries => {
-           const today = new Date().toISOString().split('T')[0];
-           const todayCash = summaries
-             .filter(s => s.date === today && s.payment_method.toLowerCase() === 'cash')
-             .reduce((sum, s) => sum + Number(s.total_amount), 0);
-           setCashTotal(todayCash);
-        })
-        .catch(err => console.error("Failed to load payment tracking:", err));
+      getLastClosingPerPos(token)
+        .then(data => setClosingCashMap(data))
+        .catch(err => console.error("Failed to load closing cash:", err));
     }
   }, [token]);
 
-  const handleOpenSession = () => {
+  const handleOpenSession = async (posId: string) => {
     resetForNewCustomer();
+    if (token) {
+      try {
+        await usePosStore.getState().openSession(token, posId);
+      } catch (e) {
+        console.error("Failed to open session for POS", e);
+      }
+    }
     navigate('/pos/tables');
   };
 
@@ -89,8 +90,8 @@ export default function DashboardPage() {
 
                 <div className="register-stats">
                   <div className="stat-line">
-                    <span className="stat-label">Last closing cash</span>
-                    <span className="stat-value">₹ {cashTotal.toFixed(2)}</span>
+                    <span className="stat-label">Today's Sales</span>
+                    <span className="stat-value">₹ {(closingCashMap[pos.id] ?? 0).toFixed(2)}</span>
                   </div>
                   <div className="stat-line">
                     <span className="stat-label">Supported</span>
@@ -102,7 +103,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="card-footer">
-                <button className="btn-open-session" onClick={handleOpenSession}>
+                <button className="btn-open-session" onClick={() => handleOpenSession(pos.id)}>
                   Open Session
                 </button>
               </div>

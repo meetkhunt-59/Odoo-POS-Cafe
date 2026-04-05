@@ -19,10 +19,55 @@ def open_session(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    res = db.table("pos_sessions").insert({"responsible_user_id": current["id"]}).execute()
+    insert_data = {"responsible_user_id": current["id"]}
+    if payload.pos_id:
+        insert_data["pos_id"] = str(payload.pos_id)
+    res = db.table("pos_sessions").insert(insert_data).execute()
     if not res.data:
         raise HTTPException(500, "Failed to open session: missing returned ID representation.")
     return SessionSummary(**res.data[0])
+
+@router.get("/sessions/last-closing")
+def get_last_closing_per_pos(
+    db: Client = Depends(get_db),
+    current: dict = Depends(get_current_user),
+):
+    """Returns the total paid amount for each POS register from today's sessions."""
+    from datetime import date
+    today = date.today().isoformat()
+    
+    # Get all sessions that were opened today (or are still open) with a pos_id
+    sessions_res = db.table("pos_sessions")\
+        .select("id, pos_id")\
+        .not_.is_("pos_id", "null")\
+        .gte("opened_at", today)\
+        .execute()
+    
+    if not sessions_res.data:
+        return {}
+    
+    # Build session_id -> pos_id map
+    session_pos_map = {}
+    for s in sessions_res.data:
+        session_pos_map[s["id"]] = s["pos_id"]
+    
+    session_ids = list(session_pos_map.keys())
+    
+    # Get all paid orders for these sessions
+    orders_res = db.table("orders")\
+        .select("session_id, total_amount")\
+        .eq("payment_status", "paid")\
+        .in_("session_id", session_ids)\
+        .execute()
+    
+    # Aggregate totals per POS
+    pos_totals: dict[str, float] = {}
+    for order in orders_res.data:
+        pos_id = session_pos_map.get(order["session_id"])
+        if pos_id:
+            pos_totals[pos_id] = pos_totals.get(pos_id, 0) + float(order["total_amount"] or 0)
+    
+    return pos_totals
 
 @router.post("/orders", response_model=OrderResponse)
 def create_order(
@@ -50,6 +95,13 @@ def create_order(
     prod_res = db.table("products").select("id, price, tax, in_stock").in_("id", product_ids).execute()
     prod_map = {p["id"]: p for p in prod_res.data}
     
+    # Fast Bulk Variant Lookup
+    variant_ids = [str(i.variant_id) for i in payload.items if i.variant_id]
+    variant_map = {}
+    if variant_ids:
+        var_res = db.table("product_variants").select("id, extra_price").in_("id", variant_ids).execute()
+        variant_map = {v["id"]: v for v in var_res.data}
+    
     insert_data_list = []
     for item_data in payload.items:
         prod = prod_map.get(str(item_data.product_id))
@@ -57,14 +109,22 @@ def create_order(
             raise HTTPException(404, f"Product {item_data.product_id} not found in catalog.")
         if prod.get("in_stock", True) is False:
             raise HTTPException(400, f"Cannot order out-of-stock product: {item_data.product_id}")
+        
+        # Calculate unit price = base + variant extra
+        unit_price = Decimal(str(prod["price"]))
+        if item_data.variant_id:
+            variant = variant_map.get(str(item_data.variant_id))
+            if variant:
+                unit_price += Decimal(str(variant.get("extra_price", 0)))
             
         insert_data_list.append({
             "order_id": order["id"],
             "product_id": prod["id"],
+            "variant_id": str(item_data.variant_id) if item_data.variant_id else None,
             "quantity": item_data.quantity,
-            "price_at_checkout": prod["price"],
+            "price_at_checkout": float(unit_price),
         })
-        line_price = Decimal(str(prod["price"])) * Decimal(str(item_data.quantity))
+        line_price = unit_price * Decimal(str(item_data.quantity))
         line_tax = line_price * (Decimal(str(prod.get("tax", 0))) / Decimal("100"))
         
         total += (line_price + line_tax)

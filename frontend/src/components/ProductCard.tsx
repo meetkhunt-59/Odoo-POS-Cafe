@@ -68,7 +68,14 @@ export default function ProductCard({ product, onAdd }: Props) {
           <h3 className="product-name" style={{ textDecoration: product.in_stock ? 'none' : 'line-through' }}>
             {product.name} {!product.in_stock && <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: 800 }}>(86)</span>}
           </h3>
-          <span className="price">₹{Number(product.price).toFixed(2)}</span>
+          <span className="price">
+            {hasVariants ? (() => {
+              const prices = product.variants.map(v => Number(product.price) + Number(v.extra_price));
+              const min = Math.min(...prices);
+              const max = Math.max(...prices);
+              return min === max ? `₹${min.toFixed(2)}` : `₹${min.toFixed(2)} – ₹${max.toFixed(2)}`;
+            })() : `₹${Number(product.price).toFixed(2)}`}
+          </span>
         </div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
           {qty > 0 && !hasVariants && (

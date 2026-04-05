@@ -39,7 +39,7 @@ interface PosState {
   fetchPointOfSales: (token: string) => Promise<void>;
 
   // Actions — session
-  openSession: (token: string) => Promise<void>;
+  openSession: (token: string, posId?: string) => Promise<void>;
 
   // Actions — cart
   addToCart: (product: Product, variant?: any | null) => void;
@@ -129,10 +129,10 @@ export const usePosStore = create<PosState>()(
         set({ pointOfSales });
       },
 
-      openSession: async (token) => {
+      openSession: async (token, posId) => {
         set({ loading: true });
         try {
-          const session = await api.openSession(token);
+          const session = await api.openSession(token, posId);
           set({ session, loading: false });
         } catch {
           set({ loading: false });
