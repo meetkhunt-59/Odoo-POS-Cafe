@@ -49,6 +49,7 @@ function App() {
       <Route path="/pos/kitchen" element={<RequireAuth><KitchenPage /></RequireAuth>} />
       <Route path="/admin/products" element={<RequireAuth><ProductsPage /></RequireAuth>} />
       <Route path="/admin/products/new" element={<RequireAuth><NewProductPage /></RequireAuth>} />
+      <Route path="/admin/products/edit/:id" element={<RequireAuth><NewProductPage /></RequireAuth>} />
       <Route path="/admin/floors" element={<RequireAuth><FloorsPage /></RequireAuth>} />
       <Route path="/admin/payments" element={<RequireAuth><PaymentSettingsPage /></RequireAuth>} />
       <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />

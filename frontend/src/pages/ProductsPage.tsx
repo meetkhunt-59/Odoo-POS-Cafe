@@ -112,7 +112,12 @@ export default function ProductsPage() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          {/* Note: In future we can link to an edit page */}
+                          <button 
+                            onClick={() => navigate(`/admin/products/edit/${p.id}`)} 
+                            style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', color: '#4f46e5' }}
+                          >
+                            <Edit size={16} />
+                          </button>
                           <button onClick={() => handleDeleteProduct(p.id)} style={{ padding: '6px', cursor: 'pointer', background: 'transparent', border: 'none', color: '#EF4444' }}>
                             <Trash2 size={16} />
                           </button>

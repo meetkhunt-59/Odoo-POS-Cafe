@@ -3,6 +3,7 @@ import CategoryFilterRow from '../components/CategoryFilterRow';
 import ProductGrid from '../components/ProductGrid';
 import OrderPanel from '../components/OrderPanel';
 import TerminalTopNav from '../components/TerminalTopNav';
+import VariantSelectionModal from '../components/VariantSelectionModal';
 import { useAuthStore } from '../store/authStore';
 import { usePosStore } from '../store/posStore';
 import type { Product } from '../api/types';
@@ -13,6 +14,7 @@ export default function POSPage() {
   const { products = [], categories = [], session, fetchAll, addToCart, loading } = usePosStore();
   const [selectedCategoryId, setSelectedCategoryId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
 
   useEffect(() => {
     if (token) fetchAll(token);
@@ -43,7 +45,11 @@ export default function POSPage() {
   }
 
   const handleAddProduct = (product: Product) => {
-    addToCart(product);
+    if (product.variants && product.variants.length > 0) {
+      setSelectedProductForVariant(product);
+    } else {
+      addToCart(product);
+    }
   };
 
   if (loading && !session) {
@@ -83,6 +89,14 @@ export default function POSPage() {
 
       {/* RIGHT PANE: 25% OrderPanel (Receipt) */}
       <OrderPanel />
+
+      {selectedProductForVariant && (
+        <VariantSelectionModal 
+          product={selectedProductForVariant}
+          onSelect={(variant) => addToCart(selectedProductForVariant, variant)}
+          onClose={() => setSelectedProductForVariant(null)}
+        />
+      )}
     </div>
   );
 }

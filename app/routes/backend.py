@@ -214,11 +214,9 @@ def update_product(
     current: dict = Depends(get_current_user),
 ):
     update_data = payload.model_dump(exclude_unset=True, mode='json')
-    
-    # 1. Handle Variants sync handled later for better retrieval consistency
-    payload_dict = payload.model_dump(exclude_unset=True, mode='json')
+    variants_to_sync = update_data.pop("variants", None)
 
-    # 2. Handle Category resolution
+    # 1. Handle Category resolution
     if "category" in update_data:
         cat_name = update_data.pop("category")
         cat_res = db.table("product_categories").select("id").eq("name", cat_name).execute()
@@ -231,14 +229,19 @@ def update_product(
                 update_data["category_id"] = new_cat.data[0]["id"]
 
     # 3. Update Product
+    print(f"DEBUG: Final Update Data for Product {product_id}: {update_data}")
     if update_data:
-        res = db.table("products").update(update_data).eq("id", product_id).execute()
+        res = db.table("products").update(update_data).eq("id", str(product_id)).execute()
+        print(f"DEBUG: Supabase Update Response: {res.data}")
         if not res.data:
-            raise HTTPException(404, "Product not found.")
+            # Try to see if it even exists
+            check = db.table("products").select("id").eq("id", str(product_id)).execute()
+            print(f"DEBUG: Check Exist Response: {check.data}")
+            raise HTTPException(404, f"Product {product_id} not found or no changes made.")
 
-    # 1. Handle Variants sync (moved after update for logic flow, but before retrieval)
-    if "variants" in payload_dict and payload_dict["variants"] is not None:
-        variants_in = payload_dict["variants"]
+    # 4. Handle Variants sync (moved after update for logic flow, but before retrieval)
+    if variants_to_sync is not None:
+        variants_in = variants_to_sync
         # Delete existing
         db.table("product_variants").delete().eq("product_id", product_id).execute()
         # Bulk Insert

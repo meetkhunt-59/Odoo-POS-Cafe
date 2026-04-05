@@ -30,6 +30,23 @@ export interface ProductVariant {
   extra_price: number;
 }
 
+export interface ProductVariantInput {
+  attribute: string;
+  value: string;
+  extra_price: number;
+}
+
+export interface ProductInput {
+  name: string;
+  category: string;
+  price: number;
+  unit?: string;
+  tax?: number;
+  description?: string;
+  in_stock?: boolean;
+  variants?: ProductVariantInput[];
+}
+
 export interface Product {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { usePosStore } from '../store/posStore';
 import { useAuthStore } from '../store/authStore';
 import * as api from '../api/client';
@@ -33,7 +33,11 @@ export default function OrderPanel() {
   const [successOrder, setSuccessOrder] = useState<{ id: string, number: number, total: number } | null>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
 
-  const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
+  const subTotal = cart.reduce((acc, item) => {
+    const basePrice = Number(item.product.price);
+    const extraPrice = Number(item.variant?.extra_price || 0);
+    return acc + (basePrice + extraPrice) * item.quantity;
+  }, 0);
   const taxRate = cart.length > 0
     ? cart.reduce((acc, item) => acc + Number(item.product.tax), 0) / cart.length
     : 0;
@@ -142,18 +146,23 @@ export default function OrderPanel() {
             <span>Select product</span>
           </div>
         )}
-        {cart.map((item) => (
-          <div key={item.product.id} className="cart-item-simplified">
+        {cart.map((item, idx) => (
+          <div key={`${item.product.id}-${item.variant?.id || 'base'}-${idx}`} className="cart-item-simplified">
             <div className="item-left-side">
-              <button className="simplified-remove" onClick={() => removeFromCart(item.product.id)}>
+              <button className="simplified-remove" onClick={() => removeFromCart(item.product.id, item.variant?.id)}>
                 <Trash2 size={14} />
               </button>
               <span className="item-qty">{item.quantity} x</span>
-              <span className="item-name">{item.product.name}</span>
+              <div>
+                <span className="item-name">{item.product.name}</span>
+                {item.variant && (
+                  <div className="item-variant-label">{item.variant.attribute}: {item.variant.value}</div>
+                )}
+              </div>
             </div>
             
             <div className="item-right-side">
-              ₹{(Number(item.product.price) * item.quantity).toFixed(2)}
+              ₹{((Number(item.product.price) + Number(item.variant?.extra_price || 0)) * item.quantity).toFixed(2)}
             </div>
           </div>
         ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import DashboardNavbar from '../components/DashboardNavbar';
 import * as api from '../api/client';
 import { useAuthStore } from '../store/authStore';
@@ -9,8 +9,11 @@ import './NewCustomerPage.css'; // Inheriting structural CSS
 
 export default function NewProductPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
+  
   const token = useAuthStore(s => s.token)!;
-  const { categories, fetchProducts, fetchCategories } = usePosStore();
+  const { products, categories, fetchProducts, fetchCategories } = usePosStore();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,8 +29,33 @@ export default function NewProductPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (token && categories.length === 0) fetchCategories(token);
-  }, [token, categories.length]);
+    if (token) {
+      if (categories.length === 0) fetchCategories(token);
+      
+      if (isEdit) {
+        // If editing, find product from global store or fetch if needed
+        const existing = products.find(p => p.id === id);
+        if (existing) {
+          setFormData({
+            name: existing.name,
+            category: existing.category,
+            price: existing.price.toString(),
+            unit: existing.unit || '',
+            tax: existing.tax.toString(),
+            description: existing.description || ''
+          });
+          setVariants(existing.variants.map(v => ({
+            attribute: v.attribute,
+            value: v.value,
+            extra_price: v.extra_price.toString()
+          })));
+        } else {
+           // If not in store, fetch list (simplest for now without single-fetch API)
+           fetchProducts(token);
+        }
+      }
+    }
+  }, [token, categories.length, isEdit, id, products]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -49,12 +77,10 @@ export default function NewProductPage() {
     setSaving(true);
     setError(null);
     try {
-      // Validate or dynamically create category if it doesn't exist
       const catVal = formData.category.trim() || 'General';
       const existingCategory = categories.find(c => c.name.toLowerCase() === catVal.toLowerCase());
       
-      // Submit product
-      await api.createProduct(token, {
+      const payload = {
         name: formData.name.trim(),
         category: catVal,
         price: parseFloat(formData.price),
@@ -66,17 +92,23 @@ export default function NewProductPage() {
           value: v.value,
           extra_price: parseFloat(v.extra_price) || 0
         }))
-      });
+      };
+
+      if (isEdit) {
+        await api.updateProduct(token, id!, payload);
+      } else {
+        await api.createProduct(token, payload);
+      }
       
       if (!existingCategory) {
-        await fetchCategories(token); // Fetch if a new one was dynamically birthed
+        await fetchCategories(token);
       }
       
       await fetchProducts(token);
       navigate('/admin/products');
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to create product');
+      setError(err.message || (isEdit ? 'Failed to update product' : 'Failed to create product'));
     } finally {
       setSaving(false);
     }
@@ -93,8 +125,8 @@ export default function NewProductPage() {
             <button className="btn-back" onClick={() => navigate('/admin/products')}>
               <ArrowLeft size={18} /> Back
             </button>
-            <h1 className="header-title">Create New Product</h1>
-            <p className="header-subtitle">Add a new item to your POS catalog.</p>
+            <h1 className="header-title">{isEdit ? 'Edit Product' : 'Create New Product'}</h1>
+            <p className="header-subtitle">{isEdit ? 'Update product pricing, details, or variants.' : 'Add a new item to your POS catalog.'}</p>
           </div>
 
           <div className="new-customer-card">
@@ -186,7 +218,7 @@ export default function NewProductPage() {
               <div className="form-actions">
                 <button type="button" className="btn-secondary" onClick={() => navigate('/admin/products')} disabled={saving}>Cancel</button>
                 <button type="submit" className="btn-primary" disabled={saving || !formData.name.trim() || !formData.price}>
-                  {saving ? <Loader2 className="spinner" size={18} /> : 'Save Product'}
+                  {saving ? <Loader2 className="spinner" size={18} /> : (isEdit ? 'Update Product' : 'Save Product')}
                 </button>
               </div>
 

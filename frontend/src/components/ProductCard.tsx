@@ -29,13 +29,24 @@ function getCategoryIcon(category: string): string {
 export default function ProductCard({ product, onAdd }: Props) {
   const cart = usePosStore((s) => s.cart);
   const updateCartQuantity = usePosStore((s) => s.updateCartQuantity);
-  const cartItem = cart.find((item) => item.product.id === product.id);
-  const qty = cartItem?.quantity || 0;
+  
+  // Aggregate quantity across all variants for the badge
+  const qty = cart
+    .filter((item) => item.product.id === product.id)
+    .reduce((acc, item) => acc + item.quantity, 0);
+  
+  const hasVariants = product.variants && product.variants.length > 0;
 
   const handleDecrease = (e: React.MouseEvent) => {
     if (!product.in_stock) return;
-    e.stopPropagation(); // prevent adding another product to cart when clicking minus
-    updateCartQuantity(product.id, qty - 1);
+    e.stopPropagation();
+    
+    // For simplicity, decrease the most recently added or first variant if multiple exist
+    const items = cart.filter(i => i.product.id === product.id);
+    if (items.length > 0) {
+      const target = items[items.length - 1];
+      updateCartQuantity(product.id, target.variant?.id || null, target.quantity - 1);
+    }
   };
 
   const handleAdd = () => {
@@ -60,7 +71,7 @@ export default function ProductCard({ product, onAdd }: Props) {
           <span className="price">₹{Number(product.price).toFixed(2)}</span>
         </div>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          {qty > 0 && (
+          {qty > 0 && !hasVariants && (
              <div className="add-btn" style={{ background: '#F3F4F6', color: '#111827', border: '1px solid #D1D5DB' }} onClick={handleDecrease}>
                <span>-</span>
              </div>

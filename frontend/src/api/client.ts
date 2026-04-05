@@ -13,6 +13,7 @@ import type {
   TransactionSummary,
   PaymentSummary,
   Customer,
+  ProductInput,
 } from './types';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
@@ -141,19 +142,7 @@ export async function listProducts(token: string): Promise<Product[]> {
   return handleResponse<Product[]>(res);
 }
 
-export async function createProduct(
-  token: string,
-  payload: {
-    name: string;
-    category: string;
-    price: number;
-    unit?: string;
-    tax?: number;
-    description?: string;
-    send_to_kitchen?: boolean;
-    variants?: { attribute: string; value: string; extra_price: number }[];
-  }
-): Promise<Product> {
+export async function createProduct(token: string, payload: ProductInput): Promise<Product> {
   const res = await fetch(`${API_BASE}/backend/products`, {
     method: 'POST',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },
@@ -162,7 +151,7 @@ export async function createProduct(
   return handleResponse<Product>(res);
 }
 
-export async function updateProduct(token: string, id: string, data: Partial<Product>): Promise<Product> {
+export async function updateProduct(token: string, id: string, data: Partial<ProductInput>): Promise<Product> {
   const res = await fetch(`${API_BASE}/backend/products/${id}`, {
     method: 'PUT',
     headers: { ...authHeaders(token), 'Content-Type': 'application/json' },

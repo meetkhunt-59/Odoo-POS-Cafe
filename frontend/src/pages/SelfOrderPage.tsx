@@ -8,8 +8,9 @@ export default function SelfOrderPage() {
   const { token } = useParams<{ token: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
+  const [cart, setCart] = useState<{product: Product, variant?: any, quantity: number}[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
   const [isOrdering, setIsOrdering] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState<{ id: string, number: number, total: number } | null>(null);
 
@@ -31,25 +32,52 @@ export default function SelfOrderPage() {
     loadData();
   }, []);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, variant: any = null) => {
     setCart(prev => {
       if (!product.in_stock) return prev;
-      const existing = prev.find(i => i.product.id === product.id);
+      const existing = prev.find(i => 
+        i.product.id === product.id && 
+        (variant ? i.variant?.id === variant.id : !i.variant)
+      );
       if (existing) {
-        return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => 
+          (i.product.id === product.id && (variant ? i.variant?.id === variant.id : !i.variant))
+            ? { ...i, quantity: i.quantity + 1 } 
+            : i
+        );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { product, variant, quantity: 1 }];
     });
   };
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = (productId: string, variantId: string | null, delta: number) => {
     setCart(prev => {
-      const existing = prev.find(i => i.product.id === id);
+      const existing = prev.find(i => 
+        i.product.id === productId && 
+        (variantId ? i.variant?.id === variantId : !i.variant)
+      );
       if (!existing) return prev;
       const nextQty = existing.quantity + delta;
-      if (nextQty <= 0) return prev.filter(i => i.product.id !== id);
-      return prev.map(i => i.product.id === id ? { ...i, quantity: nextQty } : i);
+      if (nextQty <= 0) {
+        return prev.filter(i => 
+          !(i.product.id === productId && (variantId ? i.variant?.id === variantId : !i.variant))
+        );
+      }
+      return prev.map(i => 
+        (i.product.id === productId && (variantId ? i.variant?.id === variantId : !i.variant))
+          ? { ...i, quantity: nextQty } 
+          : i
+      );
     });
+  };
+
+  const handleProductClick = (product: Product) => {
+    if (!product.in_stock) return;
+    if (product.variants && product.variants.length > 0) {
+      setSelectedProductForVariant(product);
+    } else {
+      addToCart(product);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -70,6 +98,7 @@ export default function SelfOrderPage() {
         customer_id: null,
         items: cart.map(c => ({
           product_id: c.product.id,
+          variant_id: c.variant?.id || null,
           quantity: c.quantity
         }))
       };
@@ -132,7 +161,11 @@ export default function SelfOrderPage() {
     );
   }
 
-  const subTotal = cart.reduce((acc, item) => acc + Number(item.product.price) * item.quantity, 0);
+  const subTotal = cart.reduce((acc, item) => {
+    const basePrice = Number(item.product.price);
+    const extraPrice = Number(item.variant?.extra_price || 0);
+    return acc + (basePrice + extraPrice) * item.quantity;
+  }, 0);
 
   const displayProducts = activeCategory 
     ? products.filter(p => p.category === categories.find(c => c.name === activeCategory)?.id)
@@ -168,7 +201,7 @@ export default function SelfOrderPage() {
             <div 
               key={p.id} 
               className={`menu-card ${!p.in_stock ? 'out-of-stock' : ''}`} 
-              onClick={() => p.in_stock && addToCart(p)}
+              onClick={() => handleProductClick(p)}
               style={{ opacity: p.in_stock ? 1 : 0.6, cursor: p.in_stock ? 'pointer' : 'not-allowed' }}
             >
               <div className="info">
@@ -177,9 +210,36 @@ export default function SelfOrderPage() {
                 </h3>
                 <span className="price">₹{Number(p.price).toFixed(2)}</span>
               </div>
-              {p.in_stock && <button className="add-btn">+</button>}
+              {p.in_stock && <button className="add-btn" onClick={(e) => { e.stopPropagation(); handleProductClick(p); }}>+</button>}
             </div>
          ))}
+
+         {selectedProductForVariant && (
+           <div className="modal-overlay" onClick={() => setSelectedProductForVariant(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+             <div className="variant-modal slide-up" onClick={e => e.stopPropagation()} style={{ background: 'white', width: '100%', borderRadius: '16px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 8px 0' }}>Select Option</h3>
+                <p style={{ margin: '0 0 20px 0', color: '#666' }}>{selectedProductForVariant.name}</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {selectedProductForVariant.variants.map(v => (
+                    <button 
+                      key={v.id} 
+                      onClick={() => { addToCart(selectedProductForVariant, v); setSelectedProductForVariant(null); }}
+                      style={{ padding: '16px', border: '1px solid #ddd', borderRadius: '12px', background: 'white', display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 600 }}
+                    >
+                      <span>{v.attribute}: {v.value}</span>
+                      <span style={{ color: 'var(--primary)' }}>₹{(Number(selectedProductForVariant.price) + Number(v.extra_price)).toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+                <button 
+                  onClick={() => setSelectedProductForVariant(null)}
+                  style={{ width: '100%', marginTop: '16px', padding: '12px', background: '#f5f5f5', border: 'none', borderRadius: '12px', fontWeight: 600 }}
+                >
+                  Cancel
+                </button>
+             </div>
+           </div>
+         )}
       </main>
 
       {cart.length > 0 && (
@@ -190,16 +250,19 @@ export default function SelfOrderPage() {
           </div>
           
           <div className="cart-items">
-             {cart.map(item => (
-                <div key={item.product.id} className="cart-row">
+             {cart.map((item, idx) => (
+                <div key={`${item.product.id}-${item.variant?.id || 'base'}-${idx}`} className="cart-row">
                    <div className="item-details">
-                      <span className="name">{item.product.name}</span>
-                      <span className="price">₹{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                      <span className="name">
+                        {item.product.name}
+                        {item.variant && <span style={{ fontSize: '12px', color: '#666', display: 'block' }}>{item.variant.attribute}: {item.variant.value}</span>}
+                      </span>
+                      <span className="price">₹{((Number(item.product.price) + Number(item.variant?.extra_price || 0)) * item.quantity).toFixed(2)}</span>
                    </div>
                    <div className="qty-controls">
-                      <button onClick={() => updateQuantity(item.product.id, -1)}>-</button>
+                      <button onClick={() => updateQuantity(item.product.id, item.variant?.id || null, -1)}>-</button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product.id, 1)}>+</button>
+                      <button onClick={() => updateQuantity(item.product.id, item.variant?.id || null, 1)}>+</button>
                    </div>
                 </div>
              ))}

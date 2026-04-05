@@ -42,9 +42,9 @@ interface PosState {
   openSession: (token: string) => Promise<void>;
 
   // Actions — cart
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateCartQuantity: (productId: string, quantity: number) => void;
+  addToCart: (product: Product, variant?: any | null) => void;
+  removeFromCart: (productId: string, variantId?: string | null) => void;
+  updateCartQuantity: (productId: string, variantId: string | null, quantity: number) => void;
   clearCart: () => void;
 
   // Actions — selection
@@ -139,32 +139,44 @@ export const usePosStore = create<PosState>()(
         }
       },
 
-      addToCart: (product) => {
+      addToCart: (product, variant = null) => {
         const { cart } = get();
-        const existing = cart.find((item) => item.product.id === product.id);
+        const existing = cart.find((item) => 
+          item.product.id === product.id && 
+          (variant ? item.variant?.id === variant.id : !item.variant)
+        );
+        
         if (existing) {
           set({
             cart: cart.map((item) =>
-              item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+              (item.product.id === product.id && (variant ? item.variant?.id === variant.id : !item.variant))
+                ? { ...item, quantity: item.quantity + 1 } 
+                : item
             ),
           });
         } else {
-          set({ cart: [...cart, { product, quantity: 1 }] });
+          set({ cart: [...cart, { product, variant, quantity: 1 }] });
         }
       },
-
-      removeFromCart: (productId) => {
-        set({ cart: get().cart.filter((item) => item.product.id !== productId) });
+      
+      removeFromCart: (productId, variantId = null) => {
+        set({ 
+          cart: get().cart.filter((item) => 
+            !(item.product.id === productId && (variantId ? item.variant?.id === variantId : !item.variant))
+          ) 
+        });
       },
 
-      updateCartQuantity: (productId, quantity) => {
+      updateCartQuantity: (productId, variantId, quantity) => {
         if (quantity <= 0) {
-          get().removeFromCart(productId);
+          get().removeFromCart(productId, variantId);
           return;
         }
         set({
           cart: get().cart.map((item) =>
-            item.product.id === productId ? { ...item, quantity } : item
+            (item.product.id === productId && (variantId ? item.variant?.id === variantId : !item.variant))
+              ? { ...item, quantity } 
+              : item
           ),
         });
       },
@@ -221,7 +233,6 @@ export const usePosStore = create<PosState>()(
 
 // --- Real-Time Sync WebSocket (Cashier -> Customer Display) ---
 let ws: WebSocket | null = null;
-let reconnectTimer: any = null;
 
 const connectWebSocket = () => {
     if (ws) return;
@@ -230,7 +241,7 @@ const connectWebSocket = () => {
     ws.onopen = () => console.log('Connected to Customer Display Sync WebSocket');
     ws.onclose = () => {
         ws = null;
-        reconnectTimer = setTimeout(connectWebSocket, 3000);
+        setTimeout(connectWebSocket, 3000);
     };
     ws.onmessage = (event) => {
         try {
