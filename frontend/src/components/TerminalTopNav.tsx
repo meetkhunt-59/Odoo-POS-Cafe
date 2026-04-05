@@ -1,17 +1,19 @@
-import { Coffee, Monitor, ShoppingCart, ListOrdered, ArrowLeft } from 'lucide-react';
+import { Coffee, Monitor, ShoppingCart, ArrowLeft, Package, Receipt, ChefHat } from 'lucide-react';
 import { usePosStore } from '../store/posStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './TerminalTopNav.css';
 
 export default function TerminalTopNav() {
-  const { selectedTableId, tables, cart } = usePosStore();
+  const { selectedTableId, tables } = usePosStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   const selectedTable = tables.find(t => t.id === selectedTableId);
   const isFloorView = location.pathname.includes('/pos/tables');
   const isRegisterView = location.pathname === '/pos';
-  const isOrderView = location.pathname.includes('/kitchen') || location.pathname.includes('/payment');
+  const isKitchenView = location.pathname.includes('/pos/kitchen');
+  const isPickupView = location.pathname.includes('/pos/pickups');
+  const isHistoryView = location.pathname.includes('/transactions');
 
   return (
     <div className="terminal-nav">
@@ -40,16 +42,35 @@ export default function TerminalTopNav() {
           <span>Register</span>
         </button>
 
-        <div className="nav-divider"></div>
+        {/* <div className="nav-divider"></div>
 
         <button 
-          className={`nav-btn ${isOrderView ? 'active' : ''}`}
-          onClick={() => navigate('/pos/kitchen')} // or payment? mapping to order
+          className={`nav-btn ${isKitchenView ? 'active' : ''}`}
+          onClick={() => navigate('/pos/kitchen')}
         >
-          <ListOrdered size={20} />
-          <span>Order</span>
-          {cart && cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
+          <ChefHat size={20} />
+          <span>Kitchen</span>
         </button>
+
+        <div className="nav-divider"></div> */}
+
+        <button 
+          className={`nav-btn ${isPickupView ? 'active' : ''}`}
+          onClick={() => navigate('/pos/pickups')}
+        >
+          <Package size={20} />
+          <span>Pickups</span>
+        </button>
+
+        <div className="nav-divider"></div>
+
+        {/* <button 
+          className={`nav-btn ${isHistoryView ? 'active' : ''}`}
+          onClick={() => navigate('/transactions')}
+        >
+          <Receipt size={20} />
+          <span>History</span>
+        </button> */}
       </div>
 
       <div className="status-group">

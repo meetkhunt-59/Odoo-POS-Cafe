@@ -64,6 +64,7 @@ export default function DashboardNavbar() {
             <div className="dashboard-dropdown-menu">
               <button onClick={() => handleNavigate('/transactions')}>Orders</button>
               <button onClick={() => handleNavigate('/payments-history')}>Payment</button>
+              <button onClick={() => handleNavigate('/customers')}>Customers</button>
             </div>
           )}
         </div>

@@ -345,9 +345,13 @@ def get_kitchen_display(
     db: Client = Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
-    # Get all active orders that are not cancelled or completed
-    # We fetch products and variants in the same join for speed
-    res = db.table("orders").select("*, order_items(*, product:products(name, send_to_kitchen, category:product_categories(name)), variant:product_variants(value))").neq("kitchen_status", "cancelled").order("created_at").execute()
+    # Get all active orders (to_cook, preparing, completed)
+    # Exclude finalized 'delivered' or 'cancelled' orders
+    res = db.table("orders")\
+        .select("*, order_items(*, product:products(name, send_to_kitchen, category:product_categories(name)), variant:product_variants(value))")\
+        .in_("kitchen_status", ["to_cook", "preparing", "completed"])\
+        .order("created_at")\
+        .execute()
     raw_orders = res.data
     
     kitchen_orders = []

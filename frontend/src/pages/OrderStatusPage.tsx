@@ -28,8 +28,11 @@ export default function OrderStatusPage() {
     return () => clearInterval(interval);
   }, [token]);
 
-  const preparing = orders.filter(o => o.kitchen_status === 'to_cook' || o.kitchen_status === 'preparing');
-  const ready = orders.filter(o => o.kitchen_status === 'completed');
+  const preparing = orders.filter(o => o.kitchen_status === 'to_cook' || o.kitchen_status === 'preparing').slice(0, 3);
+  const ready = orders
+    .filter(o => o.kitchen_status === 'completed')
+    .sort((a, b) => b.order_number - a.order_number) // Show latest ready first
+    .slice(0, 3);
 
   return (
     <div className="order-status-board">
